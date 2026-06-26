@@ -6,16 +6,8 @@ const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] });
 const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'QB Mietwagen – Personen- & Patiententransport | qbmw.de',
-  description:
-    'Zuverlässiger Mietwagenservice für Privatpersonen, Geschäftskunden und Patienten. Direkte Krankenkas­sen­ab­rechnung. 24/7 buchbar online oder telefonisch.',
-  metadataBase: new URL('https://qbmw.de'),
-  openGraph: {
-    title: 'QB Mietwagen',
-    description: 'Personen- & Patiententransport – jetzt online buchen.',
-    locale: 'de_DE',
-    type: 'website',
-  },
+  title: 'QB Mietwagen | Ihr zuverlässiger Fahrtdienst & Krankentransport',
+  description: 'Professioneller Mietwagenservice, Personenbeförderung und Patiententransporte (Krankenkassen) auf qbmw.de. 24/7 erreichbar.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
