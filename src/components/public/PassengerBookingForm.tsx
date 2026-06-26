@@ -1,17 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
 import {
   User, Building2, HeartPulse, MapPin, Navigation, Calendar,
   Clock, ShieldCheck, ChevronRight, ChevronLeft, CreditCard,
   Coins, FileText, ClipboardList, Loader2, ArrowRight
 } from 'lucide-react';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 type AccountType = 'private' | 'business' | 'patient';
 type PaymentMethod = 'cash' | 'card' | 'invoice' | 'health_insurance_copay' | 'health_insurance_exempt';
@@ -94,21 +88,25 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
     setIsSubmitting(true);
     setSubmitError(null);
     try {
-      const { error } = await supabase.from('bookings').insert([{
-        company_id:       companyId,
-        account_type:     accountType,
-        passenger_name:   passengerName,
-        passenger_phone:  passengerPhone,
-        pickup_address:   pickup,
-        dropoff_address:  dropoff,
-        pickup_datetime:  new Date(`${date}T${time}`).toISOString(),
-        service_type:     selectedVehicle,
-        payment_method:   paymentMethod,
-        estimated_price:  priceEstimate,
-        company_name:     accountType === 'business' ? companyName : null,
-        notes:            insuranceNotes || null,
-      }]);
-      if (error) throw error;
+      const res = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companySlug,
+          accountType,
+          passengerName,
+          passengerPhone,
+          pickup,
+          dropoff,
+          pickupDatetime: `${date}T${time}`,
+          serviceType:    selectedVehicle,
+          paymentMethod,
+          companyName:    accountType === 'business' ? companyName : null,
+          notes:          insuranceNotes || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'Serverfehler');
       setStep(5);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Unbekannter Fehler';
