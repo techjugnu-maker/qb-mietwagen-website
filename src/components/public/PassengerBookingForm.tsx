@@ -1,11 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { 
-  User, Building2, HeartPulse, MapPin, Navigation, Calendar, 
-  Clock, ShieldCheck, ChevronRight, ChevronLeft, CreditCard, 
+import { createClient } from '@supabase/supabase-js';
+import {
+  User, Building2, HeartPulse, MapPin, Navigation, Calendar,
+  Clock, ShieldCheck, ChevronRight, ChevronLeft, CreditCard,
   Coins, FileText, ClipboardList, Loader2, ArrowRight
 } from 'lucide-react';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 type AccountType = 'private' | 'business' | 'patient';
 type PaymentMethod = 'cash' | 'card' | 'invoice' | 'health_insurance_copay' | 'health_insurance_exempt';
@@ -33,6 +39,8 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
   const [priceEstimate, setPriceEstimate] = useState<number>(0);
   const [priceLabel, setPriceLabel] = useState('Festpreis');
   const [hideFullPrice, setHideFullPrice] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Auto-default payment routes based on customer profile matrix shifts
   useEffect(() => {
@@ -81,9 +89,33 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
     callRouteCalc(method, pickup, dropoff);
   };
 
-  const handleFormSubmission = (e: React.FormEvent) => {
+  const handleFormSubmission = async (e: React.FormEvent) => {
     e.preventDefault();
-    setStep(5); // Transition to deployment success view screen
+    setIsSubmitting(true);
+    setSubmitError(null);
+    try {
+      const { error } = await supabase.from('bookings').insert([{
+        company_id:       companyId,
+        account_type:     accountType,
+        passenger_name:   passengerName,
+        passenger_phone:  passengerPhone,
+        pickup_address:   pickup,
+        dropoff_address:  dropoff,
+        pickup_datetime:  new Date(`${date}T${time}`).toISOString(),
+        service_type:     selectedVehicle,
+        payment_method:   paymentMethod,
+        estimated_price:  priceEstimate,
+        company_name:     accountType === 'business' ? companyName : null,
+        notes:            insuranceNotes || null,
+      }]);
+      if (error) throw error;
+      setStep(5);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Unbekannter Fehler';
+      setSubmitError(`Buchung konnte nicht gespeichert werden: ${msg}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const formatEuro = (val: number) => 
@@ -355,13 +387,16 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
               )}
             </div>
 
+            {submitError && (
+              <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">{submitError}</p>
+            )}
             <div className="flex gap-3">
               <button type="button" onClick={() => setStep(3)} className="w-1/3 py-3 bg-navy-950 border border-border-subtle rounded-xl text-xs text-slate-300 font-medium">Zurück</button>
               <button
-                type="submit" disabled={routeCalcLoading}
+                type="submit" disabled={routeCalcLoading || isSubmitting}
                 className="flex-1 py-3 bg-gradient-to-r from-teal-500 to-emerald-500 text-navy-950 font-extrabold rounded-xl text-sm hover:from-teal-400 hover:to-emerald-400 shadow-xl shadow-teal-500/10 disabled:opacity-50 flex items-center justify-center gap-1"
               >
-                Fahrt verbindlich buchen
+                {isSubmitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Wird gebucht…</> : 'Fahrt verbindlich buchen'}
               </button>
             </div>
           </div>
