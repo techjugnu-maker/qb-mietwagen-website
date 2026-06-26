@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-// Service-role client — only used server-side, never sent to the browser
+// Service-role client — server-side only, never sent to the browser
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -13,10 +13,10 @@ async function serverComputePrice(
   pickup: string,
   dropoff: string,
   paymentMethod: PaymentMethod
-): Promise<number> {
-  if (paymentMethod === 'health_insurance_copay') return 6.00;
-  if (paymentMethod === 'health_insurance_exempt') return 0.00;
-  if (paymentMethod === 'invoice') return 0.00; // billed later via monthly invoice
+): Promise<{ estimatedPrice: number; estimatedDistance: number }> {
+  if (paymentMethod === 'health_insurance_copay') return { estimatedPrice: 6.00, estimatedDistance: 0 };
+  if (paymentMethod === 'health_insurance_exempt') return { estimatedPrice: 0.00, estimatedDistance: 0 };
+  if (paymentMethod === 'invoice')                 return { estimatedPrice: 0.00, estimatedDistance: 0 };
 
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
   let distanceKm = 0;
@@ -42,61 +42,58 @@ async function serverComputePrice(
   }
 
   const raw = 5.00 + distanceKm * 2.20 + durationMins * 0.35;
-  return Math.round(raw * 100) / 100;
+  return {
+    estimatedPrice:    Math.round(raw * 100) / 100,
+    estimatedDistance: distanceKm,
+  };
 }
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const {
-      companySlug,
-      accountType,
-      passengerName,
-      passengerPhone,
-      pickup,
-      dropoff,
-      pickupDatetime,
-      serviceType,
-      paymentMethod,
-      companyName,
-      notes,
+      account_type,
+      passenger_name,
+      passenger_phone,
+      passenger_email,
+      pickup_address,
+      dropoff_address,
+      pickup_datetime,
+      service_type,
+      payment_method,
+      insurance_name,
+      insurance_number,
     } = body;
 
-    // Validate required fields
-    if (!companySlug || !passengerName || !passengerPhone || !pickup || !dropoff || !pickupDatetime) {
+    if (!passenger_name || !passenger_phone || !pickup_address || !dropoff_address || !pickup_datetime) {
       return NextResponse.json({ error: 'Pflichtfelder fehlen.' }, { status: 400 });
     }
 
-    // Resolve company_id server-side — client cannot forge this
-    const { data: company, error: companyErr } = await supabase
-      .from('companies')
-      .select('id')
-      .eq('slug', companySlug)
-      .single();
+    // Price and distance are always computed server-side — client values are never trusted
+    const { estimatedPrice, estimatedDistance } = await serverComputePrice(
+      pickup_address,
+      dropoff_address,
+      payment_method as PaymentMethod
+    );
 
-    if (companyErr || !company) {
-      return NextResponse.json({ error: 'Unbekannter Mandant.' }, { status: 400 });
-    }
-
-    // Recompute price server-side — client value is never trusted
-    const estimatedPrice = await serverComputePrice(pickup, dropoff, paymentMethod as PaymentMethod);
-
-    const { error: insertErr } = await supabase.from('bookings').insert([{
-      company_id:      company.id,
-      account_type:    accountType,
-      passenger_name:  passengerName,
-      passenger_phone: passengerPhone,
-      pickup_address:  pickup,
-      dropoff_address: dropoff,
-      pickup_datetime: new Date(pickupDatetime).toISOString(),
-      service_type:    serviceType,
-      payment_method:  paymentMethod,
-      estimated_price: estimatedPrice,
-      company_name:    accountType === 'business' ? (companyName ?? null) : null,
-      notes:           notes ?? null,
+    const { error } = await supabase.from('bookings').insert([{
+      account_type:       account_type      ?? 'private',
+      passenger_name,
+      passenger_phone,
+      passenger_email:    passenger_email   ?? null,
+      pickup_address,
+      dropoff_address,
+      pickup_datetime:    new Date(pickup_datetime).toISOString(),
+      service_type:       service_type      ?? null,
+      payment_method:     payment_method    ?? null,
+      estimated_distance: estimatedDistance,
+      estimated_price:    estimatedPrice,
+      insurance_name:     insurance_name    ?? null,
+      insurance_number:   insurance_number  ?? null,
+      status:             'pending',
     }]);
 
-    if (insertErr) throw insertErr;
+    if (error) throw error;
 
     return NextResponse.json({ success: true });
   } catch (err) {
