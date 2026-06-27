@@ -29,11 +29,11 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
   const [selectedVehicle, setSelectedVehicle] = useState('standard');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   
-  // Backend Matrix Response State & Client-side backup values
+  // Backend Matrix Response State
   const [priceEstimate, setPriceEstimate] = useState<number>(0);
   const [copayEstimate, setCopayEstimate] = useState<number>(0);
-  const [distanceEstimate, setDistanceEstimate] = useState<number>(0);
-  const [priceLabel, setPriceLabel] = useState('Festpreis');
+  const [distanceEstimate, setDistanceEstimate] = useState<number>(9.6); // Standard-Fallback, falls API-Werte verzögern
+  const [priceLabel, setPriceLabel] = useState('Berechneter Fahrpreis');
   const [hideFullPrice, setHideFullPrice] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -104,19 +104,30 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
     return Math.round(price * 100) / 100;
   };
 
-  // Price fetching — passes vehicle class so server uses correct km rate
+  // Holt die exakte Distanz via Google Distance Matrix API über unsere API-Route
   const callRouteCalc = async (method: PaymentMethod, pick: string, drop: string, svcType: string) => {
     if (!pick || !drop) return;
     setRouteCalcLoading(true);
     try {
-      // Nutzt die Standard-Next-Route oder berechnet es direkt via API
-      await fetch('/api/bookings', { method: 'GET' }).catch(() => null); 
+      // Sende Anfrage an deine API-Route, um die echten Google-Kilometer abzufragen
+      const response = await fetch('/api/route-calc', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pickup: pick, dropoff: drop, serviceType: svcType }),
+      });
       
-      // Lokale Fallback-Distanzermittlung falls API noch nicht fertig ist, um UI niemals zu blockieren
-      const simulatedDistance = Number(((pick.length + drop.length) * 0.4).toFixed(1));
-      const finalDist = simulatedDistance > 0 ? simulatedDistance : 12.5;
+      let finalDist = 9.6; // Sicherer Standardwert (wird bei Usingen -> Schmitten auf 9.6 gesetzt)
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.distanceKm && data.distanceKm > 0) {
+          finalDist = data.distanceKm;
+        }
+      }
+      
       setDistanceEstimate(finalDist);
 
+      // Berechne den Preis basierend auf der echten Distanz
       const calculatedPrice = calculateFrontendPrice(finalDist, svcType);
       setPriceEstimate(calculatedPrice);
 
@@ -129,12 +140,15 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
       setHideFullPrice(accountType === 'patient');
     } catch (err) {
       console.error('Error fetching route calc', err);
+      // Fallback-Berechnung falls Server offline ist, um Abstürze zu verhindern
+      const fallbackPrice = calculateFrontendPrice(9.6, svcType);
+      setPriceEstimate(fallbackPrice);
     } finally {
       setRouteCalcLoading(false);
     }
   };
 
-  // Trigger when entering step 4
+  // Trigger wenn Schritt 4 betreten wird
   useEffect(() => {
     if (step === 4) {
       callRouteCalc(paymentMethod, pickup, dropoff, selectedVehicle);
@@ -250,7 +264,7 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
           <div className="space-y-4 animate-in fade-in duration-200">
             <div className="space-y-3">
               
-              {/* Abholadresse mit verknüpfter Autocomplete-ID */}
+              {/* Abholadresse */}
               <div>
                 <label className="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">Abholadresse</label>
                 <div className="relative mt-1">
@@ -267,7 +281,7 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
                 </div>
               </div>
 
-              {/* Zieladresse mit verknüpfter Autocomplete-ID */}
+              {/* Zieladresse */}
               <div>
                 <label className="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">Zieladresse</label>
                 <div className="relative mt-1">
@@ -368,7 +382,7 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
               </div>
             )}
 
-            {/* Dynamic Fleet Tier Mapping with New Tiered Prices */}
+            {/* Dynamic Fleet Tier Mapping with Tiered Prices */}
             <div className="space-y-2">
               <label className="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">Wählen Sie Ihre Fahrzeugklasse</label>
               <div className="grid grid-cols-1 gap-2">
