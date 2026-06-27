@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Background: dark navy gradient matching slate-950 / navy-950 design tokens -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#0d1627"/>
+      <stop offset="100%" stop-color="#0b1120"/>
+    </linearGradient>
+    <!-- Teal-to-cyan gradient matching the site's brand colours -->
+    <linearGradient id="tealGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#14b8a6"/>
+      <stop offset="50%"  stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#06b6d4"/>
+    </linearGradient>
+    <!-- Radial centre glow -->
+    <radialGradient id="glowGrad" cx="50%" cy="46%" r="48%">
+      <stop offset="0%"   stop-color="#14b8a6" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#14b8a6" stop-opacity="0"/>
+    </radialGradient>
+    <!-- Soft text shadow / glow filter -->
+    <filter id="textGlow" x="-15%" y="-15%" width="130%" height="130%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="7" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Base background with rounded corners (maskable safe-zone friendly) -->
+  <rect width="512" height="512" rx="88" fill="url(#bgGrad)"/>
+
+  <!-- Subtle centre glow overlay -->
+  <rect width="512" height="512" rx="88" fill="url(#glowGrad)"/>
+
+  <!-- Top accent stripe -->
+  <rect x="104" y="104" width="304" height="4" rx="2" fill="url(#tealGrad)" opacity="0.35"/>
+
+  <!-- "QB" logotype — centred, bold, gradient filled -->
+  <text
+    x="256"
+    y="292"
+    text-anchor="middle"
+    dominant-baseline="middle"
+    font-family="Arial Black, Arial, Helvetica, sans-serif"
+    font-weight="900"
+    font-size="232"
+    letter-spacing="-6"
+    fill="url(#tealGrad)"
+    filter="url(#textGlow)"
+  >QB</text>
+
+  <!-- Wordmark below -->
+  <text
+    x="256"
+    y="392"
+    text-anchor="middle"
+    font-family="Arial, Helvetica, sans-serif"
+    font-weight="700"
+    font-size="29"
+    letter-spacing="11"
+    fill="#2dd4bf"
+    opacity="0.52"
+  >MIETWAGEN</text>
+
+  <!-- Bottom accent stripe -->
+  <rect x="160" y="424" width="192" height="3" rx="1.5" fill="url(#tealGrad)" opacity="0.28"/>
+</svg>

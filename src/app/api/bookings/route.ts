@@ -35,9 +35,8 @@ function isValidEmail(v: string): boolean {
 }
 
 // ── Server-side price computation ─────────────────────────────────────────────
-// QB Mietwagen tariff: 4,50 € base + per-km rate by vehicle class.
-// The real fare is always computed — even for insurance trips so that
-// estimated_price in the DB reflects the actual amount billed to the insurer.
+// QB Mietwagen Tarif: 4,50 € Basis + gestaffelter Kilometerpreis nach Fahrzeugklasse.
+// Die ersten 15 km haben einen höheren Tarif, jeder Kilometer ab dem 16. km wird günstiger.
 async function serverComputePrice(
   pickup: string,
   dropoff: string,
@@ -63,11 +62,25 @@ async function serverComputePrice(
     distanceKm = Number((Math.max(5, hash % 45)).toFixed(1));
   }
 
-  // 4,50 € base + per-km rate (komfort = 1,85 €/km, all others = 1,70 €/km)
-  const kmRate       = serviceType === 'komfort' ? 1.85 : 1.70;
-  const estimatedPrice = Math.round((4.50 + distanceKm * kmRate) * 100) / 100;
+  // Tarife festlegen basierend auf der Klasse (standard/economy vs komfort/premier)
+  const isKomfort = serviceType === 'komfort';
+  const basePrice = 4.50;
+  const rateFirst15Km = isKomfort ? 2.60 : 2.40;
+  const rateAfter15Km = isKomfort ? 2.20 : 2.00;
 
-  // Statutory copay for health_insurance_copay: 10 % of fare, min 5 €, max 10 €
+  let calculatedPrice = basePrice;
+
+  // Mathematische Logik für die Kilometer-Staffelung
+  if (distanceKm <= 15) {
+    calculatedPrice += distanceKm * rateFirst15Km;
+  } else {
+    calculatedPrice += (15 * rateFirst15Km) + ((distanceKm - 15) * rateAfter15Km);
+  }
+
+  // Auf 2 Nachkommastellen runden
+  const estimatedPrice = Math.round(calculatedPrice * 100) / 100;
+
+  // Gesetzliche Zuzahlung berechnen: 10 % des Fahrpreises, min 5 €, max 10 €
   let copayAmount = 0;
   if (paymentMethod === 'health_insurance_copay') {
     copayAmount = Math.min(10.00, Math.max(5.00, Math.round(estimatedPrice * 0.10 * 100) / 100));
