@@ -17,16 +17,16 @@ export default function SiteHeader() {
         </Link>
 
         <a
-          href="tel:+49XXXXXXXXXX"
-          className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-teal-500/10 border border-teal-500/20 hover:bg-teal-500/20 hover:border-teal-500/40 transition-all group"
-          aria-label="Jetzt anrufen"
+          href="tel:+4917693172917"
+          className="flex items-center gap-3 px-4 py-3 rounded-xl bg-teal-500/10 border border-teal-500/20 hover:bg-teal-500/20 hover:border-teal-500/40 transition-all group"
+          aria-label="Jetzt anrufen: +49 176 93172917"
         >
           <div className="flex flex-col items-start">
             <span className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-slate-400 font-bold">
               <Clock className="w-2.5 h-2.5" /> 24/7 Direktbuchung
             </span>
             <span className="text-sm font-black font-mono text-teal-400 group-hover:text-teal-300 transition-colors">
-              +49 (0) XXX XXXXXXX
+              +49 176 93172917
             </span>
           </div>
           <div className="w-8 h-8 rounded-lg bg-teal-500/20 flex items-center justify-center flex-shrink-0">

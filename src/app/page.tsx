@@ -4,7 +4,7 @@ import React from 'react';
 import PassengerBookingForm from '@/components/public/PassengerBookingForm';
 import SiteHeader from '@/components/layout/SiteHeader';
 import SiteFooter from '@/components/layout/SiteFooter';
-import { ShieldCheck, Star } from 'lucide-react';
+import { ShieldCheck, Star, Phone } from 'lucide-react';
 
 export default function QBStartPage() {
   return (
@@ -15,7 +15,7 @@ export default function QBStartPage() {
 
       <SiteHeader />
 
-      <main className="relative flex-1 max-w-7xl mx-auto w-full px-6 py-12 grid grid-cols-1 lg:grid-cols-12 gap-12 items-start z-10">
+      <main className="relative flex-1 max-w-7xl mx-auto w-full px-6 py-12 pb-28 sm:pb-12 grid grid-cols-1 lg:grid-cols-12 gap-12 items-start z-10">
 
         {/* Linke Spalte: Infotexte */}
         <div className="lg:col-span-7 space-y-8 lg:pt-6">
@@ -74,6 +74,16 @@ export default function QBStartPage() {
       </main>
 
       <SiteFooter />
+
+      {/* Sticky call button — mobile only, sits above the browser chrome */}
+      <a
+        href="tel:+4917693172917"
+        className="fixed bottom-4 left-4 right-4 z-50 sm:hidden flex items-center justify-center gap-3 py-4 rounded-2xl bg-gradient-to-r from-teal-500 to-emerald-500 text-slate-950 font-black text-base shadow-2xl shadow-teal-500/30 active:scale-[0.97] transition-transform"
+        aria-label="Jetzt anrufen: +49 176 93172917"
+      >
+        <Phone className="w-5 h-5" />
+        Jetzt anrufen: +49 176 93172917
+      </a>
     </div>
   );
 }

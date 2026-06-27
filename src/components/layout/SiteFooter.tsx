@@ -27,7 +27,7 @@ export default function SiteFooter() {
         </div>
 
         <p className="text-center text-[10px] text-slate-700 border-t border-slate-900/60 pt-4">
-          Konzessionierter Mietwagenunternehmer gemäß § 49 PBefG &middot; Genehmigung durch: [Zuständige Behörde, Konzessionsnummer]
+          Konzessionierter Mietwagenunternehmer gemäß § 49 PBefG &middot; Genehmigungsbehörde: Gemeinde Kriftel
         </p>
 
       </div>

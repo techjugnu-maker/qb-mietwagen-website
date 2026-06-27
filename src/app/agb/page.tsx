@@ -31,7 +31,7 @@ export default function AgbPage() {
 
         <h1 className="text-2xl font-black text-white mb-2 pb-4 border-b border-slate-800">Allgemeine Geschäftsbedingungen (AGB)</h1>
         <p className="text-xs text-slate-500 mb-8">
-          QB Mietwagen – [VORNAME NACHNAME] &middot; Stand: {new Date().toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })}
+          QB Mietwagen – Qamar Ahmad &middot; Stand: {new Date().toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })}
         </p>
 
         <div className="space-y-8 text-sm">
@@ -39,8 +39,8 @@ export default function AgbPage() {
           <Section num="1" title="Geltungsbereich und Vertragspartner">
             <p>Diese Allgemeinen Geschäftsbedingungen (AGB) gelten für alle Beförderungsverträge zwischen</p>
             <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-slate-300">
-              <p className="font-semibold text-white">QB Mietwagen – [VORNAME NACHNAME]</p>
-              <p>[STRASSE HAUSNUMMER, PLZ ORT] (im Folgenden: <em>Auftragnehmer</em>)</p>
+              <p className="font-semibold text-white">QB Mietwagen – Qamar Ahmad</p>
+              <p>Beethovenstraße 9, 65830 Kriftel (im Folgenden: <em>Auftragnehmer</em>)</p>
             </div>
             <p>und dem Auftraggeber (Fahrgast oder dessen gesetzlichem Vertreter, im Folgenden: <em>Auftraggeber</em>).</p>
             <p>Entgegenstehende oder abweichende Bedingungen des Auftraggebers werden nicht anerkannt, es sei denn, der Auftragnehmer stimmt ihrer Geltung ausdrücklich schriftlich zu.</p>
@@ -94,7 +94,7 @@ export default function AgbPage() {
 
           <Section num="9" title="Anwendbares Recht und Gerichtsstand">
             <p><strong className="text-slate-300">9.1</strong> Es gilt ausschließlich das Recht der Bundesrepublik Deutschland unter Ausschluss des UN-Kaufrechts (CISG).</p>
-            <p><strong className="text-slate-300">9.2</strong> Gerichtsstand für sämtliche Streitigkeiten aus diesem Vertrag ist [ORT DES UNTERNEHMENS], sofern der Auftraggeber Kaufmann, eine juristische Person des öffentlichen Rechts oder ein öffentlich-rechtliches Sondervermögen ist.</p>
+            <p><strong className="text-slate-300">9.2</strong> Gerichtsstand für sämtliche Streitigkeiten aus diesem Vertrag ist Kriftel (Main-Taunus-Kreis), sofern der Auftraggeber Kaufmann, eine juristische Person des öffentlichen Rechts oder ein öffentlich-rechtliches Sondervermögen ist.</p>
           </Section>
 
           <Section num="10" title="Salvatorische Klausel">

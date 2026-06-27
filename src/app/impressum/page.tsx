@@ -28,9 +28,9 @@ export default function ImpressumPage() {
             <h2 className="text-xs font-bold uppercase tracking-wider text-teal-400 mb-3">Angaben gemäß § 5 TMG</h2>
             <div className="space-y-1 text-slate-300">
               <p className="font-semibold text-white">QB Mietwagen</p>
-              <p>[VORNAME NACHNAME] &mdash; Einzelunternehmen</p>
-              <p>[STRASSE] [HAUSNUMMER]</p>
-              <p>[PLZ] [ORT]</p>
+              <p>Qamar Ahmad &mdash; Einzelunternehmen</p>
+              <p>Beethovenstraße 9</p>
+              <p>65830 Kriftel</p>
               <p>Deutschland</p>
             </div>
           </section>
@@ -38,8 +38,8 @@ export default function ImpressumPage() {
           <section>
             <h2 className="text-xs font-bold uppercase tracking-wider text-teal-400 mb-3">Kontakt</h2>
             <div className="space-y-1">
-              <p>Telefon: <a href="tel:+49XXXXXXXXXX" className="text-teal-400 hover:underline">+49 (0) XXX XXXXXXX</a></p>
-              <p>E-Mail: <a href="mailto:info@qbmw.de" className="text-teal-400 hover:underline">info@qbmw.de</a></p>
+              <p>Telefon: <a href="tel:+4917693172917" className="text-teal-400 hover:underline">+49 176 93172917</a></p>
+              <p>E-Mail: <a href="mailto:techjugnu@gmail.com" className="text-teal-400 hover:underline">techjugnu@gmail.com</a></p>
               <p>Website: <a href="https://qbmw.de" className="text-teal-400 hover:underline">https://qbmw.de</a></p>
             </div>
           </section>
@@ -47,7 +47,7 @@ export default function ImpressumPage() {
           <section>
             <h2 className="text-xs font-bold uppercase tracking-wider text-teal-400 mb-3">Umsatzsteuer</h2>
             <p>Umsatzsteuer-Identifikationsnummer gemäß § 27&thinsp;a Umsatzsteuergesetz (UStG):</p>
-            <p className="mt-1 font-mono text-white">DE [IHRE UST-ID-NUMMER]</p>
+            <p className="mt-1 font-mono text-white">DE420466966</p>
           </section>
 
           <section>
@@ -58,9 +58,9 @@ export default function ImpressumPage() {
               <p>Berufsbezeichnung: <span className="text-white">Konzessionierter Mietwagenunternehmer</span></p>
               <p>Zuständige Genehmigungsbehörde (§ 49 PBefG):</p>
               <div className="mt-1 ml-4 border-l border-slate-700 pl-4 space-y-0.5">
-                <p className="text-white">[NAME DER BEHÖRDE – z.&thinsp;B. Landratsamt / Stadtamt]</p>
-                <p>[STRASSE HAUSNUMMER]</p>
-                <p>[PLZ ORT]</p>
+                <p className="text-white">Gemeinde Kriftel</p>
+                <p>Am Rathaus 2</p>
+                <p>65830 Kriftel</p>
               </div>
               <p className="mt-2">Konzessionsnummer: <span className="font-mono text-white">[IHRE KONZESSIONSNUMMER]</span></p>
               <p>Gültig bis: <span className="text-white">[GÜLTIGKEITSDATUM]</span></p>
@@ -71,8 +71,8 @@ export default function ImpressumPage() {
             <h2 className="text-xs font-bold uppercase tracking-wider text-teal-400 mb-3">
               Verantwortlich für den Inhalt (§ 55 Abs. 2 RStV)
             </h2>
-            <p>[VORNAME NACHNAME]</p>
-            <p>[STRASSE HAUSNUMMER, PLZ ORT]</p>
+            <p>Qamar Ahmad</p>
+            <p>Beethovenstraße 9, 65830 Kriftel</p>
           </section>
 
           <section>

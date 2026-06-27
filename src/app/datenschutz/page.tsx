@@ -46,11 +46,11 @@ export default function DatenschutzPage() {
           <Section title="1. Verantwortlicher (Art. 13 DSGVO)">
             <p>Verantwortlicher im Sinne der Datenschutz-Grundverordnung (DSGVO) ist:</p>
             <div className="mt-2 p-4 rounded-xl bg-slate-900/60 border border-slate-800 text-slate-300 space-y-0.5">
-              <p className="font-semibold text-white">QB Mietwagen – [VORNAME NACHNAME]</p>
-              <p>[STRASSE HAUSNUMMER]</p>
-              <p>[PLZ] [ORT]</p>
-              <p>Telefon: <a href="tel:+49XXXXXXXXXX" className="text-teal-400 hover:underline">+49 (0) XXX XXXXXXX</a></p>
-              <p>E-Mail: <a href="mailto:datenschutz@qbmw.de" className="text-teal-400 hover:underline">datenschutz@qbmw.de</a></p>
+              <p className="font-semibold text-white">QB Mietwagen – Qamar Ahmad</p>
+              <p>Beethovenstraße 9</p>
+              <p>65830 Kriftel</p>
+              <p>Telefon: <a href="tel:+4917693172917" className="text-teal-400 hover:underline">+49 176 93172917</a></p>
+              <p>E-Mail: <a href="mailto:techjugnu@gmail.com" className="text-teal-400 hover:underline">techjugnu@gmail.com</a></p>
             </div>
           </Section>
 
@@ -137,15 +137,15 @@ export default function DatenschutzPage() {
               <li><strong className="text-slate-300">Widerspruchsrecht (Art. 21 DSGVO):</strong> Soweit die Verarbeitung auf einem berechtigten Interesse beruht, können Sie Widerspruch einlegen.</li>
               <li><strong className="text-slate-300">Widerrufsrecht bei Einwilligung (Art. 7 Abs. 3 DSGVO):</strong> Erteilte Einwilligungen können Sie jederzeit ohne Nachteile widerrufen.</li>
             </ul>
-            <p>Zur Ausübung Ihrer Rechte wenden Sie sich an: <a href="mailto:datenschutz@qbmw.de" className="text-teal-400 hover:underline">datenschutz@qbmw.de</a></p>
+            <p>Zur Ausübung Ihrer Rechte wenden Sie sich an: <a href="mailto:techjugnu@gmail.com" className="text-teal-400 hover:underline">techjugnu@gmail.com</a></p>
           </Section>
 
           <Section title="7. Beschwerderecht bei der Aufsichtsbehörde (Art. 77 DSGVO)">
-            <p>Sie haben das Recht, sich bei einer Datenschutz-Aufsichtsbehörde zu beschweren. Die für uns zuständige Aufsichtsbehörde ist:</p>
+            <p>Sie haben das Recht, sich bei einer Datenschutz-Aufsichtsbehörde zu beschweren. Die für uns zuständige Aufsichtsbehörde (Bundesland Hessen) ist:</p>
             <div className="mt-2 p-4 rounded-xl bg-slate-900/60 border border-slate-800 text-slate-300 space-y-0.5">
-              <p className="font-semibold text-white">[NAME DER ZUSTÄNDIGEN LANDESBEHÖRDE – z. B. LfDI Baden-Württemberg]</p>
-              <p>[ADRESSE]</p>
-              <p>Website: <a href="#" className="text-teal-400 hover:underline">[URL DER BEHÖRDE]</a></p>
+              <p className="font-semibold text-white">Der Hessische Beauftragte für Datenschutz und Informationsfreiheit (HBDI)</p>
+              <p>Gustav-Stresemann-Ring 1, 65189 Wiesbaden</p>
+              <p>Website: <a href="https://datenschutz.hessen.de" target="_blank" rel="noopener noreferrer" className="text-teal-400 hover:underline">datenschutz.hessen.de</a></p>
             </div>
           </Section>
 

@@ -184,10 +184,10 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
               <div>
                 <label className="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">Abholadresse</label>
                 <div className="relative mt-1">
-                  <MapPin className="absolute left-3 top-3 w-4 h-4 text-emerald-400" />
+                  <MapPin className="absolute left-3 top-4 w-4 h-4 text-emerald-400" />
                   <input
                     type="text" required placeholder="Straße, Hausnummer, Stadt..." value={pickup} onChange={e => setPickup(e.target.value)}
-                    className="w-full bg-navy-950 border border-border-subtle/80 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-teal-500"
+                    className="w-full bg-navy-950 border border-border-subtle/80 rounded-xl pl-10 pr-4 py-3.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-teal-500"
                   />
                 </div>
               </div>
@@ -195,10 +195,10 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
               <div>
                 <label className="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">Zieladresse</label>
                 <div className="relative mt-1">
-                  <Navigation className="absolute left-3 top-3 w-4 h-4 text-teal-400" />
+                  <Navigation className="absolute left-3 top-4 w-4 h-4 text-teal-400" />
                   <input
                     type="text" required placeholder="Klinik, Arztpraxis oder Wunschziel..." value={dropoff} onChange={e => setDropoff(e.target.value)}
-                    className="w-full bg-navy-950 border border-border-subtle/80 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-teal-500"
+                    className="w-full bg-navy-950 border border-border-subtle/80 rounded-xl pl-10 pr-4 py-3.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-teal-500"
                   />
                 </div>
               </div>
@@ -207,15 +207,15 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
                 <div>
                   <label className="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">Datum</label>
                   <div className="relative mt-1">
-                    <Calendar className="absolute left-3 top-3 w-4 h-4 text-slate-500" />
-                    <input type="date" required value={date} onChange={e => setDate(e.target.value)} className="w-full bg-navy-950 border border-border-subtle/80 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none" />
+                    <Calendar className="absolute left-3 top-4 w-4 h-4 text-slate-500" />
+                    <input type="date" required value={date} onChange={e => setDate(e.target.value)} className="w-full bg-navy-950 border border-border-subtle/80 rounded-xl pl-10 pr-4 py-3.5 text-sm text-white focus:outline-none" />
                   </div>
                 </div>
                 <div>
                   <label className="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">Uhrzeit</label>
                   <div className="relative mt-1">
-                    <Clock className="absolute left-3 top-3 w-4 h-4 text-slate-500" />
-                    <input type="time" required value={time} onChange={e => setTime(e.target.value)} className="w-full bg-navy-950 border border-border-subtle/80 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none" />
+                    <Clock className="absolute left-3 top-4 w-4 h-4 text-slate-500" />
+                    <input type="time" required value={time} onChange={e => setTime(e.target.value)} className="w-full bg-navy-950 border border-border-subtle/80 rounded-xl pl-10 pr-4 py-3.5 text-sm text-white focus:outline-none" />
                   </div>
                 </div>
               </div>
@@ -235,18 +235,18 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
               {accountType === 'business' && (
                 <div>
                   <label className="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">Firmenname</label>
-                  <input type="text" required placeholder="Muster GmbH" value={companyName} onChange={e => setCompanyName(e.target.value)} className="w-full bg-navy-950 border border-border-subtle/80 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none mt-1" />
+                  <input type="text" required placeholder="Muster GmbH" value={companyName} onChange={e => setCompanyName(e.target.value)} className="w-full bg-navy-950 border border-border-subtle/80 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none mt-1" />
                 </div>
               )}
 
               <div>
                 <label className="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">Vollständiger Name</label>
-                <input type="text" required placeholder="Vor- und Nachname" value={passengerName} onChange={e => setPassengerName(e.target.value)} className="w-full bg-navy-950 border border-border-subtle/80 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none mt-1" />
+                <input type="text" required placeholder="Vor- und Nachname" value={passengerName} onChange={e => setPassengerName(e.target.value)} className="w-full bg-navy-950 border border-border-subtle/80 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none mt-1" />
               </div>
 
               <div>
                 <label className="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">Telefonnummer für Rückfragen</label>
-                <input type="tel" required placeholder="+49 151..." value={passengerPhone} onChange={e => setPassengerPhone(e.target.value)} className="w-full bg-navy-950 border border-border-subtle/80 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none mt-1" />
+                <input type="tel" required placeholder="+49 151..." value={passengerPhone} onChange={e => setPassengerPhone(e.target.value)} className="w-full bg-navy-950 border border-border-subtle/80 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none mt-1" />
               </div>
 
               <div>
