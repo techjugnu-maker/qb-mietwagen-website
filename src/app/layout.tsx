@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
+import Script from 'next/script';
 import './globals.css';
 
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] });
@@ -61,11 +62,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="de" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-slate-950 text-slate-100">
+        
+        {/* Nativer, sicherer Import von Google Places global ohne Layout-Verzerrung */}
+        <Script
+          src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_Maps_API_KEY}&libraries=places&language=de`}
+          strategy="beforeInteractive"
+        />
+
         {children}
+        
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
+        
         {/* Quick-contact bar — mobile only (sm:hidden), global across all pages */}
         <div className="fixed bottom-4 left-4 right-4 z-50 sm:hidden flex gap-3">
           <a

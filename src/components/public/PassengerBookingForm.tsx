@@ -52,6 +52,43 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
     }
   }, [accountType]);
 
+  // Aktiviert Google Autocomplete direkt auf den Input-IDs, sobald Schritt 2 geladen ist
+  useEffect(() => {
+    if (step === 2 && typeof window !== 'undefined' && (window as any).google) {
+      const googleInstance = (window as any).google;
+      
+      // Autocomplete Instanz für die Abholadresse
+      const pickupInput = document.getElementById('pickup-autocomplete') as HTMLInputElement;
+      if (pickupInput) {
+        const autocompletePickup = new googleInstance.maps.places.Autocomplete(pickupInput, {
+          types: ['address'],
+          componentRestrictions: { country: 'de' }
+        });
+        autocompletePickup.addListener('place_changed', () => {
+          const place = autocompletePickup.getPlace();
+          if (place.formatted_address) {
+            setPickup(place.formatted_address);
+          }
+        });
+      }
+
+      // Autocomplete Instanz für die Zieladresse
+      const dropoffInput = document.getElementById('dropoff-autocomplete') as HTMLInputElement;
+      if (dropoffInput) {
+        const autocompleteDropoff = new googleInstance.maps.places.Autocomplete(dropoffInput, {
+          types: ['address'],
+          componentRestrictions: { country: 'de' }
+        });
+        autocompleteDropoff.addListener('place_changed', () => {
+          const place = autocompleteDropoff.getPlace();
+          if (place.formatted_address) {
+            setDropoff(place.formatted_address);
+          }
+        });
+      }
+    }
+  }, [step]);
+
   // Gestaffelte Preisberechnung direkt im Frontend für synchrone UI-Anzeige
   const calculateFrontendPrice = (distanceKm: number, vehicle: string) => {
     const basePrice = 4.50;
@@ -73,7 +110,7 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
     setRouteCalcLoading(true);
     try {
       // Nutzt die Standard-Next-Route oder berechnet es direkt via API
-      const response = await fetch('/api/bookings', { method: 'GET' }).catch(() => null); 
+      await fetch('/api/bookings', { method: 'GET' }).catch(() => null); 
       
       // Lokale Fallback-Distanzermittlung falls API noch nicht fertig ist, um UI niemals zu blockieren
       const simulatedDistance = Number(((pick.length + drop.length) * 0.4).toFixed(1));
@@ -212,24 +249,37 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
         {step === 2 && (
           <div className="space-y-4 animate-in fade-in duration-200">
             <div className="space-y-3">
+              
+              {/* Abholadresse mit verknüpfter Autocomplete-ID */}
               <div>
                 <label className="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">Abholadresse</label>
                 <div className="relative mt-1">
-                  <MapPin className="absolute left-3 top-4 w-4 h-4 text-emerald-400" />
+                  <MapPin className="absolute left-3 top-4 w-4 h-4 text-emerald-400 z-10" />
                   <input
-                  type="text" required placeholder="Straße, Hausnummer, Stadt..." value={pickup} onChange={e => setPickup(e.target.value)}
-                  className="..."
+                    id="pickup-autocomplete"
+                    type="text"
+                    required
+                    placeholder="Straße, Hausnummer, Stadt..."
+                    value={pickup}
+                    onChange={e => setPickup(e.target.value)}
+                    className="w-full bg-navy-950 border border-border-subtle/80 rounded-xl pl-10 pr-4 py-3.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-teal-500 relative z-0"
                   />
                 </div>
               </div>
 
+              {/* Zieladresse mit verknüpfter Autocomplete-ID */}
               <div>
                 <label className="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">Zieladresse</label>
                 <div className="relative mt-1">
-                  <Navigation className="absolute left-3 top-4 w-4 h-4 text-teal-400" />
+                  <Navigation className="absolute left-3 top-4 w-4 h-4 text-teal-400 z-10" />
                   <input
-                    type="text" required placeholder="Klinik, Arztpraxis oder Wunschziel..." value={dropoff} onChange={e => setDropoff(e.target.value)}
-                    className="w-full bg-navy-950 border border-border-subtle/80 rounded-xl pl-10 pr-4 py-3.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-teal-500"
+                    id="dropoff-autocomplete"
+                    type="text"
+                    required
+                    placeholder="Klinik, Arztpraxis oder Wunschziel..."
+                    value={dropoff}
+                    onChange={e => setDropoff(e.target.value)}
+                    className="w-full bg-navy-950 border border-border-subtle/80 rounded-xl pl-10 pr-4 py-3.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-teal-500 relative z-0"
                   />
                 </div>
               </div>
