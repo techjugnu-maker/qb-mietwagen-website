@@ -217,8 +217,8 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
                 <div className="relative mt-1">
                   <MapPin className="absolute left-3 top-4 w-4 h-4 text-emerald-400" />
                   <input
-                    type="text" required placeholder="Straße, Hausnummer, Stadt..." value={pickup} onChange={e => setPickup(e.target.value)}
-                    className="w-full bg-navy-950 border border-border-subtle/80 rounded-xl pl-10 pr-4 py-3.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-teal-500"
+                  type="text" required placeholder="Straße, Hausnummer, Stadt..." value={pickup} onChange={e => setPickup(e.target.value)}
+                  className="..."
                   />
                 </div>
               </div>
