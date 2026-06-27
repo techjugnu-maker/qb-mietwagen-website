@@ -27,7 +27,7 @@ const jsonLd = {
   name: 'QB Mietwagen',
   url: 'https://qbmw.de',
   telephone: '+4917693172917',
-  email: 'techjugnu@gmail.com',
+  email: 'info@qbmw.de',
   founder: { '@type': 'Person', name: 'Qamar Ahmad' },
   address: {
     '@type': 'PostalAddress',

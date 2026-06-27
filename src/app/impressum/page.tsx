@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 import SiteHeader from '@/components/layout/SiteHeader';
 import SiteFooter from '@/components/layout/SiteFooter';
+import ObfuscatedLink from '@/components/ui/ObfuscatedLink';
 
 export const metadata: Metadata = {
   title: 'Impressum – QB Mietwagen',
@@ -38,8 +39,8 @@ export default function ImpressumPage() {
           <section>
             <h2 className="text-xs font-bold uppercase tracking-wider text-teal-400 mb-3">Kontakt</h2>
             <div className="space-y-1">
-              <p>Telefon: <a href="tel:+4917693172917" className="text-teal-400 hover:underline">+49 176 93172917</a></p>
-              <p>E-Mail: <a href="mailto:techjugnu@gmail.com" className="text-teal-400 hover:underline">techjugnu@gmail.com</a></p>
+              <p>Telefon: <ObfuscatedLink parts={['+49176', '93172917']} prefix="tel:" display="+49 176 93172917" className="text-teal-400 hover:underline" /></p>
+              <p>E-Mail: <ObfuscatedLink parts={['info', '@', 'qbmw', '.', 'de']} prefix="mailto:" className="text-teal-400 hover:underline" /></p>
               <p>Website: <a href="https://qbmw.de" className="text-teal-400 hover:underline">https://qbmw.de</a></p>
             </div>
           </section>

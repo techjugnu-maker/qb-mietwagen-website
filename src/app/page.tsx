@@ -66,8 +66,8 @@ export default function QBStartPage() {
           </div>
         </div>
 
-        {/* Rechte Spalte: Buchungsformular */}
-        <div className="lg:col-span-5 w-full">
+        {/* Buchungsformular — zuerst auf Mobile (order-first), rechts auf Desktop */}
+        <div className="lg:col-span-5 w-full order-first lg:order-last">
           <PassengerBookingForm companyId="qb-mietwagen-id" companySlug="qb-mietwagen" />
         </div>
 

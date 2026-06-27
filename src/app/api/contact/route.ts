@@ -76,7 +76,7 @@ export async function POST(request: Request) {
     },
     body: JSON.stringify({
       from: 'QB Mietwagen Kontakt <buchung@qbmw.de>',
-      to: ['techjugnu@gmail.com'],
+      to: ['info@qbmw.de'],
       reply_to: email,
       subject: `📥 Neue Kontaktanfrage von ${name} - QB Mietwagen`,
       html,

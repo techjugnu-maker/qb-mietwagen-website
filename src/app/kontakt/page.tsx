@@ -4,6 +4,7 @@ import { ChevronLeft, Phone, Mail, MapPin, Clock } from 'lucide-react';
 import SiteHeader from '@/components/layout/SiteHeader';
 import SiteFooter from '@/components/layout/SiteFooter';
 import KontaktForm from '@/components/public/KontaktForm';
+import ObfuscatedLink from '@/components/ui/ObfuscatedLink';
 
 export const metadata: Metadata = {
   title: 'Kontakt – QB Mietwagen Kriftel',
@@ -11,8 +12,12 @@ export const metadata: Metadata = {
     'Kontaktieren Sie QB Mietwagen per Telefon, WhatsApp oder Kontaktformular. 24/7 erreichbar im Main-Taunus-Kreis und Frankfurt.',
 };
 
-const WA_URL =
-  'https://wa.me/4917693172917?text=Hallo%20QB%20Mietwagen%2C%20ich%20habe%20eine%20Frage%20zu%20einer%20Fahrt...';
+// WhatsApp URL split so bots can't harvest the number from static HTML
+const WA_PARTS = [
+  'https://wa.me/',
+  '4917693172917',
+  '?text=Hallo%20QB%20Mietwagen%2C%20ich%20habe%20eine%20Frage%20zu%20einer%20Fahrt...',
+];
 
 export default function KontaktPage() {
   return (
@@ -43,8 +48,10 @@ export default function KontaktPage() {
                 Direktkontakt
               </h2>
 
-              <a
-                href="tel:+4917693172917"
+              {/* Tel — href assembled client-side, number text always shown */}
+              <ObfuscatedLink
+                parts={['+49176', '93172917']}
+                prefix="tel:"
                 className="flex items-center gap-4 p-4 rounded-xl bg-slate-950/60 border border-slate-800 hover:border-teal-500/30 group transition-colors"
               >
                 <div className="w-10 h-10 rounded-xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center flex-shrink-0">
@@ -56,10 +63,12 @@ export default function KontaktPage() {
                     +49 176 93172917
                   </p>
                 </div>
-              </a>
+              </ObfuscatedLink>
 
-              <a
-                href={WA_URL}
+              {/* WhatsApp — full URL split across parts, no phone visible in HTML */}
+              <ObfuscatedLink
+                parts={WA_PARTS}
+                prefix=""
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-4 p-4 rounded-xl bg-slate-950/60 border border-slate-800 hover:border-[#25D366]/30 group transition-colors"
@@ -75,10 +84,12 @@ export default function KontaktPage() {
                     Jetzt schreiben →
                   </p>
                 </div>
-              </a>
+              </ObfuscatedLink>
 
-              <a
-                href="mailto:techjugnu@gmail.com"
+              {/* Email — both href AND address text hidden until JS loads */}
+              <ObfuscatedLink
+                parts={['info', '@', 'qbmw', '.', 'de']}
+                prefix="mailto:"
                 className="flex items-center gap-4 p-4 rounded-xl bg-slate-950/60 border border-slate-800 hover:border-teal-500/30 group transition-colors"
               >
                 <div className="w-10 h-10 rounded-xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center flex-shrink-0">
@@ -86,11 +97,11 @@ export default function KontaktPage() {
                 </div>
                 <div>
                   <p className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">E-Mail</p>
-                  <p className="text-sm font-medium text-teal-400 group-hover:text-teal-300 transition-colors mt-0.5 break-all">
-                    techjugnu@gmail.com
+                  <p className="text-sm font-medium text-teal-400 group-hover:text-teal-300 transition-colors mt-0.5">
+                    info@qbmw.de
                   </p>
                 </div>
-              </a>
+              </ObfuscatedLink>
             </div>
 
             <div className="p-5 rounded-xl bg-slate-900/40 border border-slate-800 space-y-3">

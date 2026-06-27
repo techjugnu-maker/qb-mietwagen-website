@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 import SiteHeader from '@/components/layout/SiteHeader';
 import SiteFooter from '@/components/layout/SiteFooter';
+import ObfuscatedLink from '@/components/ui/ObfuscatedLink';
 
 export const metadata: Metadata = {
   title: 'Datenschutzerklärung – QB Mietwagen',
@@ -49,8 +50,8 @@ export default function DatenschutzPage() {
               <p className="font-semibold text-white">QB Mietwagen – Qamar Ahmad</p>
               <p>Beethovenstraße 9</p>
               <p>65830 Kriftel</p>
-              <p>Telefon: <a href="tel:+4917693172917" className="text-teal-400 hover:underline">+49 176 93172917</a></p>
-              <p>E-Mail: <a href="mailto:techjugnu@gmail.com" className="text-teal-400 hover:underline">techjugnu@gmail.com</a></p>
+              <p>Telefon: <ObfuscatedLink parts={['+49176', '93172917']} prefix="tel:" display="+49 176 93172917" className="text-teal-400 hover:underline" /></p>
+              <p>E-Mail: <ObfuscatedLink parts={['info', '@', 'qbmw', '.', 'de']} prefix="mailto:" className="text-teal-400 hover:underline" /></p>
             </div>
           </Section>
 
@@ -137,7 +138,7 @@ export default function DatenschutzPage() {
               <li><strong className="text-slate-300">Widerspruchsrecht (Art. 21 DSGVO):</strong> Soweit die Verarbeitung auf einem berechtigten Interesse beruht, können Sie Widerspruch einlegen.</li>
               <li><strong className="text-slate-300">Widerrufsrecht bei Einwilligung (Art. 7 Abs. 3 DSGVO):</strong> Erteilte Einwilligungen können Sie jederzeit ohne Nachteile widerrufen.</li>
             </ul>
-            <p>Zur Ausübung Ihrer Rechte wenden Sie sich an: <a href="mailto:techjugnu@gmail.com" className="text-teal-400 hover:underline">techjugnu@gmail.com</a></p>
+            <p>Zur Ausübung Ihrer Rechte wenden Sie sich an: <ObfuscatedLink parts={['datenschutz', '@', 'qbmw', '.', 'de']} prefix="mailto:" className="text-teal-400 hover:underline" /></p>
           </Section>
 
           <Section title="7. Beschwerderecht bei der Aufsichtsbehörde (Art. 77 DSGVO)">
