@@ -29,7 +29,7 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
   const [selectedVehicle, setSelectedVehicle] = useState('standard');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   
-  // States für exakte Preisberechnung
+  // States für Preisberechnung
   const [priceEstimate, setPriceEstimate] = useState<number>(0);
   const [copayEstimate, setCopayEstimate] = useState<number>(0);
   const [distanceEstimate, setDistanceEstimate] = useState<number>(0);
@@ -59,103 +59,105 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
       
       const pickupInput = document.getElementById('pickup-autocomplete') as HTMLInputElement;
       if (pickupInput) {
+        // Falls vorher schon Werte drin standen, Input füllen
+        if (pickup) pickupInput.value = pickup;
+
         const autocompletePickup = new googleInstance.maps.places.Autocomplete(pickupInput, {
           types: ['address'],
           componentRestrictions: { country: 'de' }
         });
         autocompletePickup.addListener('place_changed', () => {
           const place = autocompletePickup.getPlace();
-          if (place.formatted_address) setPickup(place.formatted_address);
+          if (place.formatted_address) {
+            setPickup(place.formatted_address);
+            pickupInput.value = place.formatted_address;
+          }
         });
       }
 
       const dropoffInput = document.getElementById('dropoff-autocomplete') as HTMLInputElement;
       if (dropoffInput) {
+        // Falls vorher schon Werte drin standen, Input füllen
+        if (dropoff) dropoffInput.value = dropoff;
+
         const autocompleteDropoff = new googleInstance.maps.places.Autocomplete(dropoffInput, {
           types: ['address'],
           componentRestrictions: { country: 'de' }
         });
         autocompleteDropoff.addListener('place_changed', () => {
           const place = autocompleteDropoff.getPlace();
-          if (place.formatted_address) setDropoff(place.formatted_address);
+          if (place.formatted_address) {
+            setDropoff(place.formatted_address);
+            dropoffInput.value = place.formatted_address;
+          }
         });
       }
     }
   }, [step]);
 
-  // Deine exakte mathematische Staffelpreis-Logik
-  const calculateTieredPrice = (distanceKm: number, vehicle: string) => {
-    const basePrice = 4.50; 
-    const kmRateFirst15 = vehicle === 'komfort' ? 2.60 : 2.40; 
-    const kmRateAfter15 = vehicle === 'komfort' ? 2.20 : 2.00; 
+  // Holt die exakte Distanz und den Preis über den Server ab
+  const callServerRouteCalc = async (method: PaymentMethod, svcType: string) => {
+    // Falls die State-Variablen durch das Autocomplete-Klicken asynchron verzögert sind,
+    // holen wir uns hier die Werte direkt, live und sicher aus den echten HTML-Eingabefeldern ab!
+    let activePickup = pickup;
+    let activeDropoff = dropoff;
 
-    let price = basePrice;
-    if (distanceKm <= 15) {
-      price += distanceKm * kmRateFirst15;
-    } else {
-      price += (15 * kmRateFirst15) + ((distanceKm - 15) * kmRateAfter15);
+    if (typeof document !== 'undefined') {
+      const pInput = document.getElementById('pickup-autocomplete') as HTMLInputElement;
+      const dInput = document.getElementById('dropoff-autocomplete') as HTMLInputElement;
+      if (pInput && pInput.value) activePickup = pInput.value;
+      if (dInput && dInput.value) activeDropoff = dInput.value;
     }
-    return Math.round(price * 100) / 100;
-  };
 
-  // Holt die ECHTE Distanz direkt über das Google SDK im Browser des Nutzers
-  const runLiveGoogleDistanceCalc = (method: PaymentMethod, svcType: string) => {
-    if (!pickup || !dropoff) return;
+    if (!activePickup || !activeDropoff) return;
     
-    if (typeof window !== 'undefined' && (window as any).google) {
-      setRouteCalcLoading(true);
-      const googleInstance = (window as any).google;
-      const service = new googleInstance.maps.DistanceMatrixService();
+    setRouteCalcLoading(true);
+    try {
+      const response = await fetch('/api/route-calc', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          pickup: activePickup, 
+          dropoff: activeDropoff, 
+          paymentMethod: method, 
+          serviceType: svcType 
+        }),
+      });
       
-      service.getDistanceMatrix(
-        {
-          origins: [pickup],
-          destinations: [dropoff],
-          travelMode: googleInstance.maps.TravelMode.DRIVING,
-          unitSystem: googleInstance.maps.UnitSystem.METRIC,
-        },
-        (response: any, status: string) => {
-          if (status === 'OK' && response.rows[0].elements[0].status === 'OK') {
-            const distanceMeters = response.rows[0].elements[0].distance.value;
-            const distanceKm = Number((distanceMeters / 1000).toFixed(1)); // z.B. 44.1
-            
-            setDistanceEstimate(distanceKm);
-            
-            // Preis live ermitteln
-            const finalPrice = calculateTieredPrice(distanceKm, svcType);
-            setPriceEstimate(finalPrice);
-
-            // Gesetzliche Zuzahlung ermitteln
-            if (method === 'health_insurance_copay') {
-              const copay = Math.min(10.00, Math.max(5.00, Math.round(finalPrice * 0.10 * 100) / 100));
-              setCopayEstimate(copay);
-            }
-          } else {
-            console.error('Google Distance Matrix Error:', status);
-          }
-          setRouteCalcLoading(false);
-          setPriceLabel('Berechneter Fahrpreis');
-          setHideFullPrice(accountType === 'patient');
-        }
-      );
+      const data = await response.json();
+      
+      if (response.ok && data.distanceKm) {
+        setPriceEstimate(data.estimatedPrice ?? 0);
+        setCopayEstimate(data.copayAmount ?? 0);
+        setDistanceEstimate(data.distanceKm ?? 0);
+        setPriceLabel(data.priceLabel || 'Berechneter Fahrpreis');
+        setHideFullPrice(data.hideFullPrice || false);
+      } else {
+        throw new Error(data.error || 'API Fehler');
+      }
+    } catch (err) {
+      console.error('Error fetching route calc from server:', err);
+      setSubmitError('Die Entfernungsmessung konnte nicht geladen werden. Bitte prüfen Sie Ihre Internetverbindung.');
+    } finally {
+      setRouteCalcLoading(false);
     }
   };
 
   // Trigger Preisberechnung bei Schritt 4
   useEffect(() => {
     if (step === 4) {
-      runLiveGoogleDistanceCalc(paymentMethod, selectedVehicle);
+      callServerRouteCalc(paymentMethod, selectedVehicle);
     }
   }, [step]);
 
   const handlePaymentSwitch = (method: PaymentMethod) => {
     setPaymentMethod(method);
-    runLiveGoogleDistanceCalc(method, selectedVehicle);
+    callServerRouteCalc(method, selectedVehicle);
   };
 
   const handleVehicleChange = (vehicle: string) => {
     setSelectedVehicle(vehicle);
-    runLiveGoogleDistanceCalc(paymentMethod, vehicle);
+    callServerRouteCalc(paymentMethod, vehicle);
   };
 
   const handleFormSubmission = async (e: React.FormEvent) => {
@@ -356,7 +358,7 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
           </div>
         )}
 
-        {/* STEP 4: VISUELLE MAP & ECHTE PREISANZEIGE */}
+        {/* STEP 4: MAP & PREIS DETAILS */}
         {step === 4 && (
           <div className="space-y-5 animate-in fade-in duration-200">
 
@@ -461,11 +463,11 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
               </div>
             </div>
 
-            {/* Preisanzeige */}
+            {/* Preis Output Box */}
             <div className="p-4 rounded-xl border border-border-subtle/80 bg-navy-950/60 flex flex-col justify-center min-h-[70px]">
               {routeCalcLoading ? (
                 <div className="flex items-center justify-center gap-2 text-xs text-slate-400 py-1">
-                  <Loader2 className="w-4 h-4 animate-spin text-teal-400" /> Google-Kilometer werden live berechnet...
+                  <Loader2 className="w-4 h-4 animate-spin text-teal-400" /> Google-Kilometer werden live über den Server ermittelt...
                 </div>
               ) : (
                 <div className="space-y-1 animate-in fade-in duration-150">
@@ -514,7 +516,7 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
           </div>
         )}
 
-        {/* STEP 5: ERFOLG */}
+        {/* STEP 5: SUCCESS */}
         {step === 5 && (
           <div className="text-center py-6 space-y-4 animate-in zoom-in-95 duration-200">
             <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/5">
