@@ -29,7 +29,7 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
   const [selectedVehicle, setSelectedVehicle] = useState('standard');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   
-  // Backend Matrix Response State
+  // States für exakte Preisberechnung
   const [priceEstimate, setPriceEstimate] = useState<number>(0);
   const [copayEstimate, setCopayEstimate] = useState<number>(0);
   const [distanceEstimate, setDistanceEstimate] = useState<number>(0);
@@ -38,7 +38,7 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // Auto-default payment routes based on customer profile matrix shifts
+  // Auto-default Profile Shifts
   useEffect(() => {
     if (accountType === 'patient') {
       setPaymentMethod('health_insurance_copay');
@@ -52,7 +52,7 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
     }
   }, [accountType]);
 
-  // Aktiviert Google Autocomplete direkt auf den Input-IDs, sobald Schritt 2 geladen ist
+  // Google Places Autocomplete Aktivierung
   useEffect(() => {
     if (step === 2 && typeof window !== 'undefined' && (window as any).google) {
       const googleInstance = (window as any).google;
@@ -83,51 +83,79 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
     }
   }, [step]);
 
-  // Holt die exakte Distanz und den Preis über die API-Route ab
-  const callRouteCalc = async (method: PaymentMethod, pick: string, drop: string, svcType: string) => {
-    if (!pick || !drop) return;
-    setRouteCalcLoading(true);
-    try {
-      const response = await fetch('/api/route-calc', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pickup: pick, dropoff: drop, paymentMethod: method, serviceType: svcType }),
-      });
+  // Deine exakte mathematische Staffelpreis-Logik
+  const calculateTieredPrice = (distanceKm: number, vehicle: string) => {
+    const basePrice = 4.50; 
+    const kmRateFirst15 = vehicle === 'komfort' ? 2.60 : 2.40; 
+    const kmRateAfter15 = vehicle === 'komfort' ? 2.20 : 2.00; 
+
+    let price = basePrice;
+    if (distanceKm <= 15) {
+      price += distanceKm * kmRateFirst15;
+    } else {
+      price += (15 * kmRateFirst15) + ((distanceKm - 15) * kmRateAfter15);
+    }
+    return Math.round(price * 100) / 100;
+  };
+
+  // Holt die ECHTE Distanz direkt über das Google SDK im Browser des Nutzers
+  const runLiveGoogleDistanceCalc = (method: PaymentMethod, svcType: string) => {
+    if (!pickup || !dropoff) return;
+    
+    if (typeof window !== 'undefined' && (window as any).google) {
+      setRouteCalcLoading(true);
+      const googleInstance = (window as any).google;
+      const service = new googleInstance.maps.DistanceMatrixService();
       
-      const data = await response.json();
-      
-      if (response.ok) {
-        setPriceEstimate(data.estimatedPrice ?? 0);
-        setCopayEstimate(data.copayAmount ?? 0);
-        setDistanceEstimate(data.distanceKm ?? 0);
-        setPriceLabel(data.priceLabel || 'Berechneter Fahrpreis');
-        setHideFullPrice(data.hideFullPrice || false);
-      } else {
-        throw new Error(data.error || 'Fehler bei API-Kalkulation');
-      }
-    } catch (err) {
-      console.error('Error fetching route calc:', err);
-      setSubmitError('Entfernungsmessung verzögert. Der Preis wird im Hintergrund ermittelt.');
-    } finally {
-      setRouteCalcLoading(false);
+      service.getDistanceMatrix(
+        {
+          origins: [pickup],
+          destinations: [dropoff],
+          travelMode: googleInstance.maps.TravelMode.DRIVING,
+          unitSystem: googleInstance.maps.UnitSystem.METRIC,
+        },
+        (response: any, status: string) => {
+          if (status === 'OK' && response.rows[0].elements[0].status === 'OK') {
+            const distanceMeters = response.rows[0].elements[0].distance.value;
+            const distanceKm = Number((distanceMeters / 1000).toFixed(1)); // z.B. 44.1
+            
+            setDistanceEstimate(distanceKm);
+            
+            // Preis live ermitteln
+            const finalPrice = calculateTieredPrice(distanceKm, svcType);
+            setPriceEstimate(finalPrice);
+
+            // Gesetzliche Zuzahlung ermitteln
+            if (method === 'health_insurance_copay') {
+              const copay = Math.min(10.00, Math.max(5.00, Math.round(finalPrice * 0.10 * 100) / 100));
+              setCopayEstimate(copay);
+            }
+          } else {
+            console.error('Google Distance Matrix Error:', status);
+          }
+          setRouteCalcLoading(false);
+          setPriceLabel('Berechneter Fahrpreis');
+          setHideFullPrice(accountType === 'patient');
+        }
+      );
     }
   };
 
-  // Trigger wenn Schritt 4 betreten wird
+  // Trigger Preisberechnung bei Schritt 4
   useEffect(() => {
     if (step === 4) {
-      callRouteCalc(paymentMethod, pickup, dropoff, selectedVehicle);
+      runLiveGoogleDistanceCalc(paymentMethod, selectedVehicle);
     }
   }, [step]);
 
   const handlePaymentSwitch = (method: PaymentMethod) => {
     setPaymentMethod(method);
-    callRouteCalc(method, pickup, dropoff, selectedVehicle);
+    runLiveGoogleDistanceCalc(method, selectedVehicle);
   };
 
   const handleVehicleChange = (vehicle: string) => {
     setSelectedVehicle(vehicle);
-    callRouteCalc(paymentMethod, pickup, dropoff, vehicle);
+    runLiveGoogleDistanceCalc(paymentMethod, vehicle);
   };
 
   const handleFormSubmission = async (e: React.FormEvent) => {
@@ -171,7 +199,7 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
   return (
     <div className="w-full bg-navy-900/90 border border-border-subtle/80 backdrop-blur-xl rounded-2xl shadow-2xl overflow-hidden animate-in fade-in duration-300">
       
-      {/* Progress Header */}
+      {/* Header Panel */}
       <div className="bg-navy-950/60 border-b border-border-subtle/40 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-teal-400 animate-pulse" />
@@ -226,7 +254,7 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
           </div>
         )}
 
-        {/* STEP 2: ROUTE */}
+        {/* STEP 2: ROUTENEINGABE */}
         {step === 2 && (
           <div className="space-y-4 animate-in fade-in duration-200">
             <div className="space-y-3">
@@ -287,7 +315,7 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
           </div>
         )}
 
-        {/* STEP 3: PERSONENINFOS */}
+        {/* STEP 3: KUNDENDATEN */}
         {step === 3 && (
           <div className="space-y-4 animate-in fade-in duration-200">
             <div className="space-y-3">
@@ -328,7 +356,7 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
           </div>
         )}
 
-        {/* STEP 4: PREIS-DETAILS & VISUELLE MAP */}
+        {/* STEP 4: VISUELLE MAP & ECHTE PREISANZEIGE */}
         {step === 4 && (
           <div className="space-y-5 animate-in fade-in duration-200">
 
@@ -396,7 +424,7 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
               </div>
             </div>
 
-            {/* Abrechnungsarten */}
+            {/* Abrechnungsart */}
             <div className="space-y-2">
               <label className="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">Abrechnungsart</label>
               <div className="grid grid-cols-2 gap-2">
@@ -433,11 +461,11 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
               </div>
             </div>
 
-            {/* Preis Output Box */}
+            {/* Preisanzeige */}
             <div className="p-4 rounded-xl border border-border-subtle/80 bg-navy-950/60 flex flex-col justify-center min-h-[70px]">
               {routeCalcLoading ? (
                 <div className="flex items-center justify-center gap-2 text-xs text-slate-400 py-1">
-                  <Loader2 className="w-4 h-4 animate-spin text-teal-400" /> Google-Kilometer werden abgerufen...
+                  <Loader2 className="w-4 h-4 animate-spin text-teal-400" /> Google-Kilometer werden live berechnet...
                 </div>
               ) : (
                 <div className="space-y-1 animate-in fade-in duration-150">
@@ -486,7 +514,7 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
           </div>
         )}
 
-        {/* STEP 5: ERFOLGREICH */}
+        {/* STEP 5: ERFOLG */}
         {step === 5 && (
           <div className="text-center py-6 space-y-4 animate-in zoom-in-95 duration-200">
             <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/5">
