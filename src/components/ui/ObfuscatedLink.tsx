@@ -30,8 +30,10 @@ interface Props {
   display?: string;
   className?: string;
   children?: ReactNode;
-  /** Open in new tab (window.open with noopener,noreferrer) */
+  /** Open in new tab — window.open already passes noopener,noreferrer internally */
   target?: string;
+  /** Accepted for API compatibility; not rendered on the span (see target handling above) */
+  rel?: string;
 }
 
 export default function ObfuscatedLink({
@@ -41,6 +43,7 @@ export default function ObfuscatedLink({
   className,
   children,
   target,
+  rel: _rel, // accepted but unused — noopener,noreferrer is passed via window.open
 }: Props) {
   function navigate() {
     const address = parts.join('');
