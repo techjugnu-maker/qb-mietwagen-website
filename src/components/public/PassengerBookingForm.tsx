@@ -23,8 +23,8 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
   
   const [passengerName, setPassengerName] = useState('');
   const [passengerPhone, setPassengerPhone] = useState('');
-  const [companyName, setCompanyName] = useState(''); // Specific to Business
-  const [insuranceNotes, setInsuranceNotes] = useState(''); // Specific to Patients
+  const [companyName, setCompanyName] = useState(''); 
+  const [insuranceNotes, setInsuranceNotes] = useState(''); 
 
   const [selectedVehicle, setSelectedVehicle] = useState('standard');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
@@ -32,7 +32,7 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
   // Backend Matrix Response State
   const [priceEstimate, setPriceEstimate] = useState<number>(0);
   const [copayEstimate, setCopayEstimate] = useState<number>(0);
-  const [distanceEstimate, setDistanceEstimate] = useState<number>(9.6); // Standard-Fallback, falls API-Werte verzögern
+  const [distanceEstimate, setDistanceEstimate] = useState<number>(0);
   const [priceLabel, setPriceLabel] = useState('Berechneter Fahrpreis');
   const [hideFullPrice, setHideFullPrice] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -57,7 +57,6 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
     if (step === 2 && typeof window !== 'undefined' && (window as any).google) {
       const googleInstance = (window as any).google;
       
-      // Autocomplete Instanz für die Abholadresse
       const pickupInput = document.getElementById('pickup-autocomplete') as HTMLInputElement;
       if (pickupInput) {
         const autocompletePickup = new googleInstance.maps.places.Autocomplete(pickupInput, {
@@ -66,13 +65,10 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
         });
         autocompletePickup.addListener('place_changed', () => {
           const place = autocompletePickup.getPlace();
-          if (place.formatted_address) {
-            setPickup(place.formatted_address);
-          }
+          if (place.formatted_address) setPickup(place.formatted_address);
         });
       }
 
-      // Autocomplete Instanz für die Zieladresse
       const dropoffInput = document.getElementById('dropoff-autocomplete') as HTMLInputElement;
       if (dropoffInput) {
         const autocompleteDropoff = new googleInstance.maps.places.Autocomplete(dropoffInput, {
@@ -81,68 +77,37 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
         });
         autocompleteDropoff.addListener('place_changed', () => {
           const place = autocompleteDropoff.getPlace();
-          if (place.formatted_address) {
-            setDropoff(place.formatted_address);
-          }
+          if (place.formatted_address) setDropoff(place.formatted_address);
         });
       }
     }
   }, [step]);
 
-  // Gestaffelte Preisberechnung direkt im Frontend für synchrone UI-Anzeige
-  const calculateFrontendPrice = (distanceKm: number, vehicle: string) => {
-    const basePrice = 4.50;
-    const kmRateFirst15 = vehicle === 'komfort' ? 2.60 : 2.40;
-    const kmRateAfter15 = vehicle === 'komfort' ? 2.20 : 2.00;
-
-    let price = basePrice;
-    if (distanceKm <= 15) {
-      price += distanceKm * kmRateFirst15;
-    } else {
-      price += (15 * kmRateFirst15) + ((distanceKm - 15) * kmRateAfter15);
-    }
-    return Math.round(price * 100) / 100;
-  };
-
-  // Holt die exakte Distanz via Google Distance Matrix API über unsere API-Route
+  // Holt die exakte Distanz und den Preis über die API-Route ab
   const callRouteCalc = async (method: PaymentMethod, pick: string, drop: string, svcType: string) => {
     if (!pick || !drop) return;
     setRouteCalcLoading(true);
     try {
-      // Sende Anfrage an deine API-Route, um die echten Google-Kilometer abzufragen
       const response = await fetch('/api/route-calc', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pickup: pick, dropoff: drop, serviceType: svcType }),
+        body: JSON.stringify({ pickup: pick, dropoff: drop, paymentMethod: method, serviceType: svcType }),
       });
       
-      let finalDist = 9.6; // Sicherer Standardwert (wird bei Usingen -> Schmitten auf 9.6 gesetzt)
+      const data = await response.json();
       
       if (response.ok) {
-        const data = await response.json();
-        if (data.distanceKm && data.distanceKm > 0) {
-          finalDist = data.distanceKm;
-        }
+        setPriceEstimate(data.estimatedPrice ?? 0);
+        setCopayEstimate(data.copayAmount ?? 0);
+        setDistanceEstimate(data.distanceKm ?? 0);
+        setPriceLabel(data.priceLabel || 'Berechneter Fahrpreis');
+        setHideFullPrice(data.hideFullPrice || false);
+      } else {
+        throw new Error(data.error || 'Fehler bei API-Kalkulation');
       }
-      
-      setDistanceEstimate(finalDist);
-
-      // Berechne den Preis basierend auf der echten Distanz
-      const calculatedPrice = calculateFrontendPrice(finalDist, svcType);
-      setPriceEstimate(calculatedPrice);
-
-      if (method === 'health_insurance_copay') {
-        const copay = Math.min(10.00, Math.max(5.00, Math.round(calculatedPrice * 0.10 * 100) / 100));
-        setCopayEstimate(copay);
-      }
-      
-      setPriceLabel('Berechneter Fahrpreis');
-      setHideFullPrice(accountType === 'patient');
     } catch (err) {
-      console.error('Error fetching route calc', err);
-      // Fallback-Berechnung falls Server offline ist, um Abstürze zu verhindern
-      const fallbackPrice = calculateFrontendPrice(9.6, svcType);
-      setPriceEstimate(fallbackPrice);
+      console.error('Error fetching route calc:', err);
+      setSubmitError('Entfernungsmessung verzögert. Der Preis wird im Hintergrund ermittelt.');
     } finally {
       setRouteCalcLoading(false);
     }
@@ -185,6 +150,8 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
           payment_method:  paymentMethod,
           insurance_name:  accountType === 'patient' ? (companyName || null) : null,
           insurance_number: null,
+          estimated_distance: distanceEstimate,
+          estimated_price: priceEstimate
         }),
       });
       const data = await res.json();
@@ -204,7 +171,7 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
   return (
     <div className="w-full bg-navy-900/90 border border-border-subtle/80 backdrop-blur-xl rounded-2xl shadow-2xl overflow-hidden animate-in fade-in duration-300">
       
-      {/* Visual Progress Header Panel */}
+      {/* Progress Header */}
       <div className="bg-navy-950/60 border-b border-border-subtle/40 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-teal-400 animate-pulse" />
@@ -217,7 +184,7 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
 
       <form onSubmit={handleFormSubmission} className="p-6 space-y-6">
         
-        {/* STEP 1: SEGMENTATION ACCELERATOR MATRIX */}
+        {/* STEP 1: FAHRTART */}
         {step === 1 && (
           <div className="space-y-4 animate-in fade-in duration-200">
             <div className="text-center space-y-1">
@@ -259,12 +226,10 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
           </div>
         )}
 
-        {/* STEP 2: ROUTING COORDINATES PANEL */}
+        {/* STEP 2: ROUTE */}
         {step === 2 && (
           <div className="space-y-4 animate-in fade-in duration-200">
             <div className="space-y-3">
-              
-              {/* Abholadresse */}
               <div>
                 <label className="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">Abholadresse</label>
                 <div className="relative mt-1">
@@ -281,7 +246,6 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
                 </div>
               </div>
 
-              {/* Zieladresse */}
               <div>
                 <label className="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">Zieladresse</label>
                 <div className="relative mt-1">
@@ -323,7 +287,7 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
           </div>
         )}
 
-        {/* STEP 3: ACCOUNT PROFILE IDENTIFICATION */}
+        {/* STEP 3: PERSONENINFOS */}
         {step === 3 && (
           <div className="space-y-4 animate-in fade-in duration-200">
             <div className="space-y-3">
@@ -364,7 +328,7 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
           </div>
         )}
 
-        {/* STEP 4: TRANSACTION FINALIZATION & VALIDATION MODAL */}
+        {/* STEP 4: PREIS-DETAILS & VISUELLE MAP */}
         {step === 4 && (
           <div className="space-y-5 animate-in fade-in duration-200">
 
@@ -382,7 +346,7 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
               </div>
             )}
 
-            {/* Dynamic Fleet Tier Mapping with Tiered Prices */}
+            {/* Fahrzeugklassen */}
             <div className="space-y-2">
               <label className="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">Wählen Sie Ihre Fahrzeugklasse</label>
               <div className="grid grid-cols-1 gap-2">
@@ -393,7 +357,7 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
                         <input type="radio" name="vclass" checked={selectedVehicle === 'kombi'} onChange={() => handleVehicleChange('kombi')} className="text-teal-500" />
                         <div>
                           <p className="text-xs font-bold text-white">Kombi (Viel Platz / Rollator)</p>
-                          <p className="text-[10px] text-slate-400 mt-0.5">Ideal für Gehhilfen und faltbare Rollstühle. (Abrechnungstarif standard)</p>
+                          <p className="text-[10px] text-slate-400 mt-0.5">Ideal für Gehhilfen und faltbare Rollstühle.</p>
                         </div>
                       </div>
                     </label>
@@ -432,7 +396,7 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
               </div>
             </div>
 
-            {/* Dynamic Segment Billing Methods Selector */}
+            {/* Abrechnungsarten */}
             <div className="space-y-2">
               <label className="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">Abrechnungsart</label>
               <div className="grid grid-cols-2 gap-2">
@@ -469,22 +433,21 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
               </div>
             </div>
 
-            {/* Price Output Display Card Segment */}
+            {/* Preis Output Box */}
             <div className="p-4 rounded-xl border border-border-subtle/80 bg-navy-950/60 flex flex-col justify-center min-h-[70px]">
               {routeCalcLoading ? (
                 <div className="flex items-center justify-center gap-2 text-xs text-slate-400 py-1">
-                  <Loader2 className="w-4 h-4 animate-spin text-teal-400" /> Fahrtstrecke wird berechnet...
+                  <Loader2 className="w-4 h-4 animate-spin text-teal-400" /> Google-Kilometer werden abgerufen...
                 </div>
               ) : (
                 <div className="space-y-1 animate-in fade-in duration-150">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-400">{priceLabel}:</span>
+                    <span className="text-xs font-bold text-slate-400">{priceLabel} ({distanceEstimate} km):</span>
                     <span className="text-lg font-bold font-data text-teal-400">
                       {formatEuro(priceEstimate)}
                     </span>
                   </div>
 
-                  {/* Copay row for Krankenkasse patients */}
                   {paymentMethod === 'health_insurance_copay' && copayEstimate > 0 && (
                     <div className="flex items-center justify-between border-t border-border-subtle/40 pt-2 mt-1">
                       <span className="text-xs text-amber-300/80">Ihr Eigenanteil (ges. Zuzahlung):</span>
@@ -492,7 +455,6 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
                     </div>
                   )}
 
-                  {/* Insurance billing notes */}
                   {hideFullPrice && (
                     <p className="text-[10px] text-slate-400 leading-normal border-t border-border-subtle/40 pt-2 mt-1">
                       💡 <strong>Hinweis zur Abrechnung:</strong> {paymentMethod === 'health_insurance_copay'
@@ -524,7 +486,7 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
           </div>
         )}
 
-        {/* STEP 5: DEPLOYMENT SUCCESS SCREEN */}
+        {/* STEP 5: ERFOLGREICH */}
         {step === 5 && (
           <div className="text-center py-6 space-y-4 animate-in zoom-in-95 duration-200">
             <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/5">
