@@ -11,6 +11,7 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   /* Custom design tokens for booking form and dark-UI components */
+  --color-navy-900: #0d1627;
   --color-navy-950: #0b1120;
   --color-border-subtle: #1c2a3a;
 }

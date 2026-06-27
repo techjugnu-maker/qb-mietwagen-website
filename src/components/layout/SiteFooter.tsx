@@ -12,6 +12,10 @@ export default function SiteFooter() {
             <span>&copy; {new Date().getFullYear()} QB Mietwagen &mdash; Alle Rechte vorbehalten.</span>
           </div>
           <nav className="flex items-center gap-1" aria-label="Rechtliche Links">
+            <Link href="/kontakt" className="px-2 py-1 hover:text-slate-300 transition-colors rounded">
+              Kontakt
+            </Link>
+            <span className="text-slate-700" aria-hidden>·</span>
             <Link href="/impressum" className="px-2 py-1 hover:text-slate-300 transition-colors rounded">
               Impressum
             </Link>

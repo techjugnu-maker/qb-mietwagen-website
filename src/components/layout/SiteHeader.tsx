@@ -16,6 +16,15 @@ export default function SiteHeader() {
           </div>
         </Link>
 
+        <nav className="hidden sm:flex items-center" aria-label="Hauptnavigation">
+          <Link
+            href="/kontakt"
+            className="px-3 py-2 text-sm font-medium text-slate-400 hover:text-teal-400 rounded-lg transition-colors"
+          >
+            Kontakt
+          </Link>
+        </nav>
+
         <a
           href="tel:+4917693172917"
           className="flex items-center gap-3 px-4 py-3 rounded-xl bg-teal-500/10 border border-teal-500/20 hover:bg-teal-500/20 hover:border-teal-500/40 transition-all group"
