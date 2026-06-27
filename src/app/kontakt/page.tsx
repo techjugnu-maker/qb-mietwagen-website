@@ -98,7 +98,7 @@ export default function KontaktPage() {
                 <div>
                   <p className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">E-Mail</p>
                   <p className="text-sm font-medium text-teal-400 group-hover:text-teal-300 transition-colors mt-0.5">
-                    info@qbmw.de
+                    info [at] qbmw.de
                   </p>
                 </div>
               </ObfuscatedLink>
