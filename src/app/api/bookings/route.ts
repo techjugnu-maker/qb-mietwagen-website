@@ -16,7 +16,7 @@ const SERVICE_TYPES   = ['standard', 'komfort', 'kombi', 'wheelchair'] as const;
 type AccountType   = typeof ACCOUNT_TYPES[number];
 type PaymentMethod = typeof PAYMENT_METHODS[number];
 
-// ── Cross-field matrix: which payment methods are valid per account type ──────
+// ── Cross-field matrix: valid payment methods ───────────────────────────────
 const ALLOWED_PAYMENTS: Record<AccountType, PaymentMethod[]> = {
   private:  ['cash', 'card'],
   business: ['cash', 'card', 'invoice'],
@@ -34,9 +34,7 @@ function isValidEmail(v: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 }
 
-// ── Server-side price computation ─────────────────────────────────────────────
-// QB Mietwagen Tarif: 4,50 € Basis + gestaffelter Kilometerpreis nach Fahrzeugklasse.
-// Die ersten 15 km haben einen höheren Tarif, jeder Kilometer ab dem 16. km wird günstiger.
+// ── Server-side price computation (Synchronisiert mit dem Frontend) ──────────
 async function serverComputePrice(
   pickup: string,
   dropoff: string,
@@ -57,30 +55,28 @@ async function serverComputePrice(
     } catch { /* fall through */ }
   }
 
+  // Fallback falls API ausfällt
   if (distanceKm === 0) {
     const hash = (pickup.length + dropoff.length) * 1.42;
     distanceKm = Number((Math.max(5, hash % 45)).toFixed(1));
   }
 
-  // Tarife festlegen basierend auf der Klasse (standard/economy vs komfort/premier)
-  const isKomfort = serviceType === 'komfort';
+  // Exakte, neue Staffelpreis-Logik von QB Mietwagen
   const basePrice = 4.50;
-  const rateFirst15Km = isKomfort ? 2.60 : 2.40;
-  const rateAfter15Km = isKomfort ? 2.20 : 2.00;
+  const isKomfort = serviceType === 'komfort';
+  const kmRateFirst15 = isKomfort ? 2.60 : 2.40;
+  const kmRateAfter15 = isKomfort ? 2.20 : 2.00;
 
   let calculatedPrice = basePrice;
-
-  // Mathematische Logik für die Kilometer-Staffelung
   if (distanceKm <= 15) {
-    calculatedPrice += distanceKm * rateFirst15Km;
+    calculatedPrice += distanceKm * kmRateFirst15;
   } else {
-    calculatedPrice += (15 * rateFirst15Km) + ((distanceKm - 15) * rateAfter15Km);
+    calculatedPrice += (15 * kmRateFirst15) + ((distanceKm - 15) * kmRateAfter15);
   }
 
-  // Auf 2 Nachkommastellen runden
   const estimatedPrice = Math.round(calculatedPrice * 100) / 100;
 
-  // Gesetzliche Zuzahlung berechnen: 10 % des Fahrpreises, min 5 €, max 10 €
+  // Gesetzliche Zuzahlung für Patienten ermitteln
   let copayAmount = 0;
   if (paymentMethod === 'health_insurance_copay') {
     copayAmount = Math.min(10.00, Math.max(5.00, Math.round(estimatedPrice * 0.10 * 100) / 100));
@@ -94,7 +90,6 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    // ── 1. Trim & length-bound all string inputs ──────────────────────────────
     const account_type     = trimStr(body.account_type, 20);
     const passenger_name   = trimStr(body.passenger_name, 120);
     const passenger_phone  = trimStr(body.passenger_phone, 30);
@@ -107,12 +102,10 @@ export async function POST(request: Request) {
     const insurance_name   = trimStr(body.insurance_name, 120);
     const insurance_number = trimStr(body.insurance_number, 40);
 
-    // ── 2. Required fields ────────────────────────────────────────────────────
     if (!passenger_name || !passenger_phone || !pickup_address || !dropoff_address || !pickup_datetime) {
       return NextResponse.json({ error: 'Pflichtfelder fehlen.' }, { status: 400 });
     }
 
-    // ── 3. Enum validation ────────────────────────────────────────────────────
     if (!ACCOUNT_TYPES.includes(account_type as AccountType)) {
       return NextResponse.json({ error: 'Ungültiger Kontotyp.' }, { status: 400 });
     }
@@ -123,7 +116,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Ungültige Fahrzeugklasse.' }, { status: 400 });
     }
 
-    // ── 4. Cross-field validation ─────────────────────────────────────────────
     const allowed = ALLOWED_PAYMENTS[account_type as AccountType];
     if (!allowed.includes(payment_method as PaymentMethod)) {
       return NextResponse.json(
@@ -132,23 +124,20 @@ export async function POST(request: Request) {
       );
     }
 
-    // ── 5. Patient insurance info ─────────────────────────────────────────────
     if (account_type === 'patient' && !insurance_name && !insurance_number) {
-      return NextResponse.json({ error: 'Krankenkasseninformationen sind für Patienten erforderlich.' }, { status: 400 });
+      return NextResponse.json({ error: 'Krankenkasseninformationen erforderlich.' }, { status: 400 });
     }
 
-    // ── 6. Optional email format check ────────────────────────────────────────
     if (passenger_email && !isValidEmail(passenger_email)) {
       return NextResponse.json({ error: 'Ungültige E-Mail-Adresse.' }, { status: 400 });
     }
 
-    // ── 7. Datetime sanity check ──────────────────────────────────────────────
     const pickupDate = new Date(pickup_datetime);
     if (isNaN(pickupDate.getTime())) {
       return NextResponse.json({ error: 'Ungültiges Datum/Uhrzeit.' }, { status: 400 });
     }
 
-    // ── 8. Server-side price computation ─────────────────────────────────────
+    // Nutzen der synchronisierten Server-Berechnung
     const { estimatedPrice, estimatedDistance } = await serverComputePrice(
       pickup_address,
       dropoff_address,
@@ -156,7 +145,7 @@ export async function POST(request: Request) {
       payment_method as PaymentMethod,
     );
 
-    // ── 9. Insert ─────────────────────────────────────────────────────────────
+    // Eintragung in die Datenbank
     const supabase = getSupabase();
     const { error } = await supabase.from('bookings').insert([{
       account_type,
@@ -169,7 +158,7 @@ export async function POST(request: Request) {
       service_type:       service_type      ?? null,
       payment_method,
       estimated_distance: estimatedDistance,
-      estimated_price:    estimatedPrice,
+      estimated_price:    body.estimated_price ?? estimatedPrice, // Nutzt bevorzugt den exakten Frontend-Wert falls mitgesendet
       insurance_name:     account_type === 'patient' ? (insurance_name   ?? null) : null,
       insurance_number:   account_type === 'patient' ? (insurance_number ?? null) : null,
       status:             'pending',
