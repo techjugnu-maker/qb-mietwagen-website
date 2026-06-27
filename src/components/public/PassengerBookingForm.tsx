@@ -31,6 +31,7 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
   
   // Backend Matrix Response State
   const [priceEstimate, setPriceEstimate] = useState<number>(0);
+  const [copayEstimate, setCopayEstimate] = useState<number>(0);
   const [priceLabel, setPriceLabel] = useState('Festpreis');
   const [hideFullPrice, setHideFullPrice] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -50,37 +51,43 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
     }
   }, [accountType]);
 
-  // Network Telemetry Price Fetching
-  const callRouteCalc = async (method: PaymentMethod, pick: string, drop: string) => {
+  // Price fetching — always passes vehicle class so server uses correct km rate
+  const callRouteCalc = async (method: PaymentMethod, pick: string, drop: string, svcType: string) => {
     if (!pick || !drop) return;
     setRouteCalcLoading(true);
     try {
       const response = await fetch('/api/route-calc', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pickup: pick, dropoff: drop, paymentMethod: method })
+        body: JSON.stringify({ pickup: pick, dropoff: drop, paymentMethod: method, serviceType: svcType }),
       });
       const data = await response.json();
-      setPriceEstimate(data.estimatedPrice);
+      setPriceEstimate(data.estimatedPrice ?? 0);
+      setCopayEstimate(data.copayAmount ?? 0);
       setPriceLabel(data.priceLabel || 'Festpreis');
       setHideFullPrice(data.hideFullPrice || false);
     } catch (err) {
-      console.error('Error fetching calculated matrix details', err);
+      console.error('Error fetching route calc', err);
     } finally {
       setRouteCalcLoading(false);
     }
   };
 
-  // Trigger telemetry fetch upon loading summary sequence or changing inputs
+  // Trigger when entering step 4
   useEffect(() => {
     if (step === 4) {
-      callRouteCalc(paymentMethod, pickup, dropoff);
+      callRouteCalc(paymentMethod, pickup, dropoff, selectedVehicle);
     }
   }, [step]);
 
   const handlePaymentSwitch = (method: PaymentMethod) => {
     setPaymentMethod(method);
-    callRouteCalc(method, pickup, dropoff);
+    callRouteCalc(method, pickup, dropoff, selectedVehicle);
+  };
+
+  const handleVehicleChange = (vehicle: string) => {
+    setSelectedVehicle(vehicle);
+    callRouteCalc(paymentMethod, pickup, dropoff, vehicle);
   };
 
   const handleFormSubmission = async (e: React.FormEvent) => {
@@ -265,7 +272,21 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
         {/* STEP 4: TRANSACTION FINALIZATION & VALIDATION MODAL */}
         {step === 4 && (
           <div className="space-y-5 animate-in fade-in duration-200">
-            
+
+            {/* Google Maps route preview */}
+            {process.env.NEXT_PUBLIC_Maps_API_KEY && pickup && dropoff && (
+              <div className="w-full h-[220px] rounded-xl overflow-hidden border border-border-subtle/60">
+                <iframe
+                  className="w-full h-full"
+                  style={{ border: 0 }}
+                  loading="lazy"
+                  allowFullScreen
+                  referrerPolicy="no-referrer-when-downgrade"
+                  src={`https://www.google.com/maps/embed/v1/directions?key=${process.env.NEXT_PUBLIC_Maps_API_KEY}&origin=${encodeURIComponent(pickup)}&destination=${encodeURIComponent(dropoff)}&mode=driving&language=de`}
+                />
+              </div>
+            )}
+
             {/* Dynamic Fleet Tier Mapping */}
             <div className="space-y-2">
               <label className="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">Wählen Sie Ihre Fahrzeugklasse</label>
@@ -274,7 +295,7 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
                   <>
                     <label className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer bg-navy-950 ${selectedVehicle === 'kombi' ? 'border-teal-500' : 'border-border-subtle/40'}`}>
                       <div className="flex items-center gap-3">
-                        <input type="radio" name="vclass" checked={selectedVehicle === 'kombi'} onChange={() => setSelectedVehicle('kombi')} className="text-teal-500" />
+                        <input type="radio" name="vclass" checked={selectedVehicle === 'kombi'} onChange={() => handleVehicleChange('kombi')} className="text-teal-500" />
                         <div>
                           <p className="text-xs font-bold text-white">Kombi (Viel Platz / Rollator)</p>
                           <p className="text-[10px] text-slate-400 mt-0.5">Ideal für Gehhilfen und faltbare Rollstühle.</p>
@@ -283,7 +304,7 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
                     </label>
                     <label className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer bg-navy-950 ${selectedVehicle === 'wheelchair' ? 'border-teal-500' : 'border-border-subtle/40'}`}>
                       <div className="flex items-center gap-3">
-                        <input type="radio" name="vclass" checked={selectedVehicle === 'wheelchair'} onChange={() => setSelectedVehicle('wheelchair')} className="text-teal-500" />
+                        <input type="radio" name="vclass" checked={selectedVehicle === 'wheelchair'} onChange={() => handleVehicleChange('wheelchair')} className="text-teal-500" />
                         <div>
                           <p className="text-xs font-bold text-white">Spezialfahrzeug (Rollstuhlgerecht)</p>
                           <p className="text-[10px] text-slate-400 mt-0.5">Fahrzeug mit Rampe für sitzende Beförderung.</p>
@@ -295,19 +316,19 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
                   <>
                     <label className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer bg-navy-950 ${selectedVehicle === 'standard' ? 'border-teal-500' : 'border-border-subtle/40'}`}>
                       <div className="flex items-center gap-3">
-                        <input type="radio" name="vclass" checked={selectedVehicle === 'standard'} onChange={() => setSelectedVehicle('standard')} className="text-teal-500" />
+                        <input type="radio" name="vclass" checked={selectedVehicle === 'standard'} onChange={() => handleVehicleChange('standard')} className="text-teal-500" />
                         <div>
                           <p className="text-xs font-bold text-white">Standard Mietwagen</p>
-                          <p className="text-[10px] text-slate-400 mt-0.5">Zuverlässige und wirtschaftliche Beförderung.</p>
+                          <p className="text-[10px] text-slate-400 mt-0.5">Zuverlässige und wirtschaftliche Beförderung. (1,70 €/km)</p>
                         </div>
                       </div>
                     </label>
                     <label className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer bg-navy-950 ${selectedVehicle === 'komfort' ? 'border-teal-500' : 'border-border-subtle/40'}`}>
                       <div className="flex items-center gap-3">
-                        <input type="radio" name="vclass" checked={selectedVehicle === 'komfort'} onChange={() => setSelectedVehicle('komfort')} className="text-teal-500" />
+                        <input type="radio" name="vclass" checked={selectedVehicle === 'komfort'} onChange={() => handleVehicleChange('komfort')} className="text-teal-500" />
                         <div>
                           <p className="text-xs font-bold text-white">Komfort Limousine</p>
-                          <p className="text-[10px] text-slate-400 mt-0.5">Premium-Fahrzeug für geschäftliche Termine.</p>
+                          <p className="text-[10px] text-slate-400 mt-0.5">Premium-Fahrzeug für geschäftliche Termine. (1,85 €/km)</p>
                         </div>
                       </div>
                     </label>
@@ -362,17 +383,25 @@ export default function PassengerBookingForm({ companyId, companySlug }: { compa
               ) : (
                 <div className="space-y-1 animate-in fade-in duration-150">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-400">Berechneter Eigenanteil:</span>
+                    <span className="text-xs font-bold text-slate-400">Berechneter Fahrpreis:</span>
                     <span className="text-lg font-bold font-data text-teal-400">
                       {formatEuro(priceEstimate)}
                     </span>
                   </div>
-                  
-                  {/* Strategic Medical copy rendering */}
+
+                  {/* Copay row for Krankenkasse patients */}
+                  {paymentMethod === 'health_insurance_copay' && copayEstimate > 0 && (
+                    <div className="flex items-center justify-between border-t border-border-subtle/40 pt-2 mt-1">
+                      <span className="text-xs text-amber-300/80">Ihr Eigenanteil (ges. Zuzahlung):</span>
+                      <span className="text-sm font-bold text-amber-400">{formatEuro(copayEstimate)}</span>
+                    </div>
+                  )}
+
+                  {/* Insurance billing notes */}
                   {hideFullPrice && (
                     <p className="text-[10px] text-slate-400 leading-normal border-t border-border-subtle/40 pt-2 mt-1">
-                      💡 <strong>Hinweis zur Abrechnung:</strong> {paymentMethod === 'health_insurance_copay' 
-                        ? 'Sie zahlen lediglich den gesetzlichen Eigenanteil direkt im Fahrzeug. Die restlichen Fahrtkosten rechnen wir direkt mit Ihrer Krankenkasse ab. Bitte übergeben Sie den Transportschein (Muster 4) dem Fahrer.' 
+                      💡 <strong>Hinweis zur Abrechnung:</strong> {paymentMethod === 'health_insurance_copay'
+                        ? 'Sie zahlen lediglich den oben angezeigten Eigenanteil direkt im Fahrzeug. Die restlichen Fahrtkosten rechnen wir direkt mit Ihrer Krankenkasse ab. Bitte übergeben Sie den Transportschein (Muster 4) dem Fahrer.'
                         : 'Da Sie zuzahlungsbefreit sind, entstehen für Sie keine direkten Kosten. Bitte zeigen Sie Ihren Befreiungsausweis zusammen mit dem Transportschein (Muster 4) beim Fahrer vor.'}
                     </p>
                   )}

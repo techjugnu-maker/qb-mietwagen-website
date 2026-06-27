@@ -2,13 +2,15 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 
-// HTML-escape user-supplied strings before embedding in email HTML
 const esc = (s: unknown) =>
   String(s ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
+
+const fmt = (n: number) =>
+  n.toFixed(2).replace('.', ',') + ' €'
 
 serve(async (req) => {
   const body = await req.json()
@@ -53,10 +55,7 @@ serve(async (req) => {
 
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
-      },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${RESEND_API_KEY}` },
       body: JSON.stringify({
         from: 'QB Mietwagen Kontakt <buchung@qbmw.de>',
         to: ['info@qbmw.de'],
@@ -70,8 +69,7 @@ serve(async (req) => {
       const err = await res.text().catch(() => '')
       console.error('[resend-email] contact send failed:', res.status, err)
       return new Response(JSON.stringify({ ok: false }), {
-        status: 502,
-        headers: { 'Content-Type': 'application/json' },
+        status: 502, headers: { 'Content-Type': 'application/json' },
       })
     }
 
@@ -83,6 +81,15 @@ serve(async (req) => {
   // ── Booking webhook (Supabase DB INSERT trigger) ──────────────────────────
   const { record } = body
 
+  // Fare already stored as the real km-based price
+  const price = parseFloat(record.estimated_price) || 0
+  const priceFormatted = price > 0 ? fmt(price) : 'Wird berechnet'
+
+  // Statutory copay: 10 % of fare, min 5 €, max 10 €
+  const copay = record.payment_method === 'health_insurance_copay'
+    ? Math.min(10.00, Math.max(5.00, Math.round(price * 0.10 * 100) / 100))
+    : 0
+
   const emailHtml = `
 <div style="font-family:sans-serif;max-width:600px;color:#333;">
   <h2 style="color:#0d9488;">🚗 Neue Buchung auf qbmw.de eingegangen!</h2>
@@ -93,13 +100,23 @@ serve(async (req) => {
   <p><strong>Abholung:</strong> ${record.pickup_address}</p>
   <p><strong>Ziel:</strong> ${record.dropoff_address}</p>
   <p><strong>Datum &amp; Uhrzeit:</strong> ${new Date(record.pickup_datetime).toLocaleString('de-DE', { timeZone: 'Europe/Berlin' })} Uhr</p>
-  <p><strong>Beförderungsart:</strong> ${record.service_type}</p>
+  <p><strong>Fahrzeugklasse:</strong> ${record.service_type || '—'}</p>
   <p><strong>Zahlungsart:</strong> ${record.payment_method}</p>
   <hr style="border:none;border-top:1px solid #eee;" />
-  <p style="font-size:16px;font-weight:bold;">Geschätzter Fahrpreis: ${record.estimated_price ? record.estimated_price + ' €' : 'Wird berechnet'}</p>
-  ${record.account_type === 'patient' ? `
-  <div style="background:#f0fdfa;padding:10px;border-left:4px solid #0d9488;margin-top:10px;">
-    <strong>🏥 Krankenkassen-Infos:</strong><br />
+  <p style="font-size:16px;font-weight:bold;">Geschätzter Fahrpreis: ${priceFormatted}</p>
+  ${record.payment_method === 'health_insurance_copay' ? `
+  <div style="background:#f0fdfa;padding:10px;border-left:4px solid #0d9488;margin-top:6px;">
+    <strong>🏥 Abrechnung über Krankenkasse</strong><br />
+    Gesetzliche Zuzahlung (Eigenanteil Patient): <strong>${fmt(copay)}</strong>
+  </div>` : ''}
+  ${record.payment_method === 'health_insurance_exempt' ? `
+  <div style="background:#f0fdfa;padding:10px;border-left:4px solid #0d9488;margin-top:6px;">
+    <strong>🏥 Abrechnung über Krankenkasse – Zuzahlungsbefreit</strong><br />
+    Der Patient legt einen Befreiungsausweis vor. Keine Zuzahlung.
+  </div>` : ''}
+  ${record.account_type === 'patient' && (record.insurance_name || record.insurance_number) ? `
+  <div style="background:#f0fdfa;padding:10px;border-left:4px solid #0d9488;margin-top:6px;">
+    <strong>Krankenkassen-Infos:</strong><br />
     Kasse: ${record.insurance_name || 'N/A'}<br />
     Vers.-Nr: ${record.insurance_number || 'N/A'}
   </div>` : ''}
@@ -107,10 +124,7 @@ serve(async (req) => {
 
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${RESEND_API_KEY}`,
-    },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${RESEND_API_KEY}` },
     body: JSON.stringify({
       from: 'QB Mietwagen System <onboarding@resend.dev>',
       to: ['mohsinnaeem1995@gmail.com'],
